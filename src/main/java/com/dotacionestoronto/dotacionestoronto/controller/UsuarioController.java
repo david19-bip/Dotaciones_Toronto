@@ -40,8 +40,34 @@ public class UsuarioController {
             @RequestParam Integer rol,
             Model model) {
 
+        // Validar campos obligatorios
+        if (nombre.isEmpty() || documento.isEmpty() || correo.isEmpty() ||
+            telefono.isEmpty() || direccion.isEmpty() || password.isEmpty()) {
+            model.addAttribute("error", "Todos los campos son obligatorios.");
+            return "registro";
+        }
+
+        // Validar formato de correo
+        if (!correo.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$")) {
+            model.addAttribute("error", "El correo no tiene un formato válido.");
+            return "registro";
+        }
+
+        // Validar longitud de contraseña
+        if (password.length() < 6) {
+            model.addAttribute("error", "La contraseña debe tener al menos 6 caracteres.");
+            return "registro";
+        }
+
+        // Validar correo duplicado
         if (usuarioRepository.findByCorreo(correo) != null) {
             model.addAttribute("error", "Ya existe un usuario con ese correo.");
+            return "registro";
+        }
+
+        // Validar documento duplicado
+        if (usuarioRepository.findByDocumento(documento) != null) {
+            model.addAttribute("error", "Ya existe un usuario con ese documento.");
             return "registro";
         }
 
