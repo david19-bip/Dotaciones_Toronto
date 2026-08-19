@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuarios - Dotaciones Toronto</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link th:href="@{/css/admin.css}" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <i class="bi bi-buildings me-2"></i>Dotaciones Toronto
+        </div>
+        <a href="/admin/panel"><i class="bi bi-house"></i> Inicio</a>
+        <a href="/admin/usuarios" class="active"><i class="bi bi-people"></i> Usuarios</a>
+        <a href="/admin/productos"><i class="bi bi-box"></i> Productos</a>
+        <a href="/admin/inventario"><i class="bi bi-archive"></i> Inventario</a>
+        <a href="/admin/pedidos"><i class="bi bi-bag"></i> Pedidos</a>
+        <a href="/admin/devoluciones"><i class="bi bi-arrow-return-left"></i> Devoluciones</a>
+        <form th:action="@{/logout}" method="post" style="padding: 10px 20px; margin-top: 10px;">
+            <button type="submit" style="background:none; border:none; color:#f87171; cursor:pointer; font-size:0.9rem; padding:0;">
+                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+            </button>
+        </form>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="fw-bold text-dark mb-1">Gestión de Usuarios</h4>
+                <p class="text-muted mb-0">Administra los usuarios del sistema</p>
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrearUsuario">
+                <i class="bi bi-person-plus me-1"></i> Nuevo Usuario
+            </button>
+        </div>
+
+        <!-- Alertas -->
+        <div th:if="${exito}" class="alert alert-success" th:text="${exito}"></div>
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+        <!-- Tabla de usuarios -->
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead style="background: linear-gradient(90deg, #1a1a2e, #0f3460); color:#e2b96f;">
+                        <tr>
+                            <th class="p-3"># ID</th>
+                            <th class="p-3">Nombre</th>
+                            <th class="p-3">Documento</th>
+                            <th class="p-3">Correo</th>
+                            <th class="p-3">Teléfono</th>
+                            <th class="p-3">Rol</th>
+                            <th class="p-3">Estado</th>
+                            <th class="p-3">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(usuarios)}">
+                            <td colspan="8" class="text-center p-4 text-muted">No hay usuarios registrados</td>
+                        </tr>
+                        <tr th:each="usuario : ${usuarios}">
+                            <td class="p-3 fw-bold" th:text="${usuario.id}"></td>
+                            <td class="p-3" th:text="${usuario.nombre}"></td>
+                            <td class="p-3" th:text="${usuario.documento}"></td>
+                            <td class="p-3" th:text="${usuario.correo}"></td>
+                            <td class="p-3" th:text="${usuario.telefono}"></td>
+                            <td class="p-3">
+                                <span th:class="${'badge ' +
+                                    (usuario.idRol == 1 ? 'bg-danger' :
+                                    (usuario.idRol == 2 ? 'bg-primary' :
+                                    (usuario.idRol == 3 ? 'bg-success' : 'bg-warning text-dark')))}"
+                                    th:text="${usuario.idRol == 1 ? 'Admin' :
+                                    (usuario.idRol == 2 ? 'Cliente' :
+                                    (usuario.idRol == 3 ? 'Vendedor' : 'Bodeguero'))}">
+                                </span>
+                            </td>
+                            <td class="p-3">
+                                <span th:class="${'badge ' + (usuario.estado == 'Habilitado' ? 'bg-success' : 'bg-secondary')}"
+                                      th:text="${usuario.estado}"></span>
+                            </td>
+                            <td class="p-3">
+                                <form th:action="@{/admin/usuarios/toggleEstado}" method="post" class="d-inline">
+                                    <input type="hidden" name="idUsuario" th:value="${usuario.id}">
+                                    <button type="submit"
+                                        th:class="${'btn btn-sm ' + (usuario.estado == 'Habilitado' ? 'btn-warning' : 'btn-success')}"
+                                        th:text="${usuario.estado == 'Habilitado' ? 'Inhabilitar' : 'Habilitar'}">
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Crear Usuario -->
+    <div class="modal fade" id="modalCrearUsuario" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(90deg, #1a1a2e, #0f3460);">
+                    <h5 class="modal-title text-white"><i class="bi bi-person-plus me-2"></i>Nuevo Usuario</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form th:action="@{/admin/usuarios/crear}" method="post">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nombre</label>
+                            <input type="text" name="nombre" class="form-control" placeholder="Nombre completo" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Documento</label>
+                            <input type="text" name="documento" class="form-control" placeholder="Número de documento"
+                                   pattern="[0-9]+" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Correo electrónico</label>
+                            <input type="email" name="correo" class="form-control" placeholder="correo@ejemplo.com" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Teléfono</label>
+                            <input type="text" name="telefono" class="form-control" placeholder="Teléfono"
+                                   pattern="[0-9]+" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Dirección</label>
+                            <input type="text" name="direccion" class="form-control" placeholder="Dirección" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Contraseña</label>
+                            <input type="password" name="password" class="form-control" placeholder="••••••••"
+                                   minlength="6" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Rol</label>
+                            <select name="rol" class="form-control" required>
+                                <option value="">Seleccione un rol</option>
+                                <option value="2">Cliente</option>
+                                <option value="3">Vendedor</option>
+                                <option value="4">Bodeguero</option>
+                                <option value="1">Admin</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                            <i class="bi bi-person-plus me-1"></i> Crear Usuario
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
