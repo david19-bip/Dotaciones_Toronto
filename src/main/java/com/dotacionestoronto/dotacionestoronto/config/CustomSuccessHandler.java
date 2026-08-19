@@ -16,13 +16,13 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
                                         Authentication authentication) throws IOException {
 
         if (authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
-            response.sendRedirect("/admin/panel");
+            response.sendRedirect("/admin/panel_admin");
         } else if (authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_VENDEDOR"))) {
-            response.sendRedirect("/vendedor/panel");
+            response.sendRedirect("/vendedor/panel_vendedor");
         } else if (authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_CLIENTE"))) {
-            response.sendRedirect("/cliente/panel");
+            response.sendRedirect("/cliente/panel_cliente");
         } else if (authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_BODEGUERO"))) {
-            response.sendRedirect("/bodeguero/panel");
+            response.sendRedirect("/bodeguero/panel_bodeguero");
         } else {
             response.sendRedirect("/login?error");
         }

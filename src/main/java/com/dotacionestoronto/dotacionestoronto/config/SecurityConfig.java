@@ -20,22 +20,59 @@ public class SecurityConfig {
     @Autowired
     private UsuarioService usuarioService;
 
+    // ==========================================
+    // PASSWORD ENCODER
+    // ==========================================
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // ==========================================
+    // CONFIGURACIÓN DE SEGURIDAD
+    // ==========================================
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login", "/registro", "/css/**", "/js/**", "/images/**").permitAll()
-                .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/vendedor/**").hasRole("VENDEDOR")
-                .requestMatchers("/cliente/**").hasRole("CLIENTE")
-                .requestMatchers("/bodeguero/**").hasRole("BODEGUERO")
-                .anyRequest().authenticated()
+
+                // Rutas públicas
+                .requestMatchers(
+                    "/login",
+                    "/registro",
+                    "/css/**",
+                    "/js/**",
+                    "/images/**"
+                ).permitAll()
+
+                // Rutas del administrador
+                .requestMatchers("/admin/**")
+                .hasAuthority("ROLE_ADMIN")
+
+                // Rutas del vendedor
+                .requestMatchers("/vendedor/**")
+                .hasAuthority("ROLE_VENDEDOR")
+
+                // Rutas del cliente
+                .requestMatchers("/cliente/**")
+                .hasAuthority("ROLE_CLIENTE")
+
+                // Rutas del bodeguero
+                .requestMatchers("/bodeguero/**")
+                .hasAuthority("ROLE_BODEGUERO")
+
+                // Cualquier otra ruta requiere autenticación
+                .anyRequest()
+                .authenticated()
             )
+
+            // ==========================================
+            // LOGIN
+            // ==========================================
+
             .formLogin(form -> form
                 .loginPage("/login")
                 .loginProcessingUrl("/login")
@@ -43,21 +80,40 @@ public class SecurityConfig {
                 .failureUrl("/login?error")
                 .permitAll()
             )
+
+            // ==========================================
+            // LOGOUT
+            // ==========================================
+
             .logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout")
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                .logoutRequestMatcher(
+                    new AntPathRequestMatcher("/logout")
+                )
                 .permitAll()
             );
 
         return http.build();
     }
 
+    // ==========================================
+    // AUTHENTICATION MANAGER
+    // ==========================================
+
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
+    public AuthenticationManager authenticationManager(
+            HttpSecurity http) throws Exception {
+
         AuthenticationManagerBuilder builder =
-            http.getSharedObject(AuthenticationManagerBuilder.class);
-        builder.userDetailsService(usuarioService).passwordEncoder(passwordEncoder());
+                http.getSharedObject(
+                        AuthenticationManagerBuilder.class
+                );
+
+        builder
+            .userDetailsService(usuarioService)
+            .passwordEncoder(passwordEncoder());
+
         return builder.build();
     }
 }

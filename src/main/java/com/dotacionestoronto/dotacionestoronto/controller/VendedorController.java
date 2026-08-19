@@ -42,55 +42,111 @@ public class VendedorController {
         return usuarioRepository.findByCorreo(auth.getName());
     }
 
+    // ==========================================
+    // PANEL PRINCIPAL DEL VENDEDOR
+    // ==========================================
+
+    @GetMapping("/panel_vendedor")
+    public String panelVendedor(Model model) {
+        Usuario usuario = getUsuarioActual();
+
+        model.addAttribute("nombre", usuario.getNombre());
+
+        return "vendedor/panel_vendedor";
+    }
+
+    // ==========================================
+    // PEDIDOS
+    // ==========================================
+
     @GetMapping("/pedidos")
     public String pedidos(Model model) {
-        List<Pedido> pedidos = pedidoRepository.findByOcultoFalseOrderByFechaPedidoDesc();
+
+        List<Pedido> pedidos =
+                pedidoRepository.findByOcultoFalseOrderByFechaPedidoDesc();
+
         model.addAttribute("pedidos", pedidos);
         model.addAttribute("nombre", getUsuarioActual().getNombre());
+
         return "vendedor/pedidos_vendedor";
     }
 
     @PostMapping("/pedidos/cambiarEstado")
-    public String cambiarEstado(@RequestParam Long idPedido, @RequestParam String estado) {
-        Pedido pedido = pedidoRepository.findById(idPedido).orElse(null);
+    public String cambiarEstado(
+            @RequestParam Long idPedido,
+            @RequestParam String estado) {
+
+        Pedido pedido =
+                pedidoRepository.findById(idPedido).orElse(null);
+
         if (pedido != null) {
             pedido.setEstado(estado);
             pedidoRepository.save(pedido);
         }
+
         return "redirect:/vendedor/pedidos";
     }
 
+    // ==========================================
+    // VENTAS
+    // ==========================================
+
     @GetMapping("/ventas")
     public String ventas(Model model) {
-        List<Venta> ventas = ventaRepository.findAllByOrderByFechaVentaDesc();
+
+        List<Venta> ventas =
+                ventaRepository.findAllByOrderByFechaVentaDesc();
+
         model.addAttribute("ventas", ventas);
         model.addAttribute("nombre", getUsuarioActual().getNombre());
+
         return "vendedor/ventas_vendedor";
     }
 
+    // ==========================================
+    // DEVOLUCIONES
+    // ==========================================
+
     @GetMapping("/devoluciones")
     public String devoluciones(Model model) {
-        List<Devolucion> devoluciones = devolucionRepository.findAllByOrderByFechaDevolucionDesc();
+
+        List<Devolucion> devoluciones =
+                devolucionRepository.findAllByOrderByFechaDevolucionDesc();
+
         model.addAttribute("devoluciones", devoluciones);
         model.addAttribute("nombre", getUsuarioActual().getNombre());
+
         return "vendedor/devoluciones_vendedor";
     }
 
     @PostMapping("/devoluciones/cambiarEstado")
-    public String cambiarEstadoDevolucion(@RequestParam Long idDevolucion, @RequestParam String estado) {
-        Devolucion devolucion = devolucionRepository.findById(idDevolucion).orElse(null);
+    public String cambiarEstadoDevolucion(
+            @RequestParam Long idDevolucion,
+            @RequestParam String estado) {
+
+        Devolucion devolucion =
+                devolucionRepository.findById(idDevolucion).orElse(null);
+
         if (devolucion != null) {
             devolucion.setEstado(estado);
             devolucionRepository.save(devolucion);
         }
+
         return "redirect:/vendedor/devoluciones";
     }
 
+    // ==========================================
+    // PERFIL
+    // ==========================================
+
     @GetMapping("/perfil")
     public String perfil(Model model) {
+
         Usuario usuario = getUsuarioActual();
+
         model.addAttribute("usuario", usuario);
         model.addAttribute("nombre", usuario.getNombre());
+
         return "vendedor/perfil_vendedor";
     }
 
@@ -104,17 +160,38 @@ public class VendedorController {
             Model model) {
 
         Usuario usuario = getUsuarioActual();
-        if (!nombre.isEmpty()) usuario.setNombre(nombre);
-        if (!correo.isEmpty()) usuario.setCorreo(correo);
-        if (!telefono.isEmpty()) usuario.setTelefono(telefono);
-        if (!direccion.isEmpty()) usuario.setDireccion(direccion);
-        if (password != null && !password.isEmpty()) {
-            usuario.setContrasena(passwordEncoder.encode(password));
+
+        if (!nombre.isEmpty()) {
+            usuario.setNombre(nombre);
         }
+
+        if (!correo.isEmpty()) {
+            usuario.setCorreo(correo);
+        }
+
+        if (!telefono.isEmpty()) {
+            usuario.setTelefono(telefono);
+        }
+
+        if (!direccion.isEmpty()) {
+            usuario.setDireccion(direccion);
+        }
+
+        if (password != null && !password.isEmpty()) {
+            usuario.setContrasena(
+                    passwordEncoder.encode(password)
+            );
+        }
+
         usuarioRepository.save(usuario);
+
         model.addAttribute("usuario", usuario);
         model.addAttribute("nombre", usuario.getNombre());
-        model.addAttribute("exito", "Perfil actualizado correctamente.");
+        model.addAttribute(
+                "exito",
+                "Perfil actualizado correctamente."
+        );
+
         return "vendedor/perfil_vendedor";
     }
 }
