@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @Controller
-@RequestMapping("/vendedor")
+@RequestMapping("/panel_vendedor")
 public class VendedorController {
 
     @Autowired

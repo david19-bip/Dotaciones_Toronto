@@ -1,10 +1,12 @@
 package com.dotacionestoronto.dotacionestoronto.controller;
 
 import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
+import com.dotacionestoronto.dotacionestoronto.entity.Inventario;
 import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
 import com.dotacionestoronto.dotacionestoronto.entity.Producto;
 import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
 import com.dotacionestoronto.dotacionestoronto.repository.DevolucionRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.InventarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
@@ -34,6 +36,9 @@ public class AdminController {
 
     @Autowired
     private ProductoRepository productoRepository;
+
+    @Autowired
+    private InventarioRepository inventarioRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -152,6 +157,44 @@ public class AdminController {
     public String eliminarProducto(@RequestParam Long idProducto) {
         productoRepository.deleteById(idProducto);
         return "redirect:/admin/productos";
+    }
+
+    // ===== INVENTARIO =====
+    @GetMapping("/inventario")
+    public String inventario(Model model) {
+        model.addAttribute("inventarios", inventarioRepository.findAll());
+        model.addAttribute("productos", productoRepository.findAll());
+        model.addAttribute("nombre", getUsuarioActual().getNombre());
+        return "admin/inventario_admin";
+    }
+
+    @PostMapping("/inventario/crear")
+    public String crearInventario(
+            @RequestParam Long idProducto,
+            @RequestParam Integer cantidadActual,
+            @RequestParam Integer stockMinimo) {
+
+        Inventario inventario = new Inventario();
+        inventario.setIdProducto(idProducto);
+        inventario.setCantidadActual(cantidadActual);
+        inventario.setStockMinimo(stockMinimo);
+        inventario.setInhabilitado(false);
+        inventarioRepository.save(inventario);
+
+        return "redirect:/admin/inventario";
+    }
+
+    @PostMapping("/inventario/actualizar")
+    public String actualizarInventario(
+            @RequestParam Long idInventario,
+            @RequestParam Integer cantidadActual) {
+
+        Inventario inventario = inventarioRepository.findById(idInventario).orElse(null);
+        if (inventario != null) {
+            inventario.setCantidadActual(cantidadActual);
+            inventarioRepository.save(inventario);
+        }
+        return "redirect:/admin/inventario";
     }
 
     // ===== PEDIDOS =====
