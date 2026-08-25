@@ -22,6 +22,11 @@ public class UsuarioService implements UserDetailsService {
             throw new UsernameNotFoundException("Usuario no encontrado: " + correo);
         }
 
+        // Verificar si el usuario está inhabilitado
+        if ("Inhabilitado".equals(usuario.getEstado())) {
+            throw new UsernameNotFoundException("Usuario inhabilitado");
+        }
+
         String rol = switch (usuario.getIdRol()) {
             case 1 -> "ROLE_ADMIN";
             case 2 -> "ROLE_CLIENTE";

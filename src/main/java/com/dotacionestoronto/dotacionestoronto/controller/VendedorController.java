@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @Controller
-@RequestMapping("/panel_vendedor")
+@RequestMapping("/vendedor")
 public class VendedorController {
 
     @Autowired
@@ -46,7 +46,7 @@ public class VendedorController {
     // PANEL PRINCIPAL DEL VENDEDOR
     // ==========================================
 
-    @GetMapping("/panel_vendedor")
+    @GetMapping("/panel")
     public String panelVendedor(Model model) {
         Usuario usuario = getUsuarioActual();
 

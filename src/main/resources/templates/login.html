@@ -11,7 +11,9 @@
 <body>
     <div class="login-card">
         <div class="text-center mb-3">
-            <img th:src="@{/images/logo negro.png}" alt="Logo Dotaciones Toronto" class="login-icon" style="width: 100px; height: 100px; object-fit: contain;">
+            <div style="width: 100px; height: 100px; margin: 0 auto; overflow: hidden;">
+                <img th:src="@{/images/logo negro.png}" alt="Logo" style="width: 100px; height: 100px; object-fit: contain; display: block;">
+            </div>
             <div class="login-title mt-2">Dotaciones Toronto</div>
             <div class="login-subtitle">Inicia sesión para continuar</div>
         </div>
@@ -23,16 +25,18 @@
             Sesión cerrada correctamente.
         </div>
 
-        <form th:action="@{/login}" method="post">
+        <form th:action="@{/login}" method="post" novalidate id="formLogin">
             <div class="mb-3">
                 <label class="form-label fw-semibold">Correo electrónico</label>
-                <input type="email" name="username" class="form-control"
+                <input type="email" name="username" id="username" class="form-control"
                        placeholder="correo@ejemplo.com" required autofocus>
+                <div class="invalid-feedback">Ingrese un correo electrónico válido.</div>
             </div>
             <div class="mb-4">
                 <label class="form-label fw-semibold">Contraseña</label>
-                <input type="password" name="password" class="form-control"
-                       placeholder="••••••••" required>
+                <input type="password" name="password" id="password" class="form-control"
+                       placeholder="••••••••" required minlength="6">
+                <div class="invalid-feedback">La contraseña debe tener al menos 6 caracteres.</div>
             </div>
             <button type="submit" class="btn btn-primary btn-login w-100">
                 <i class="bi bi-box-arrow-in-right me-1"></i> Iniciar sesión
@@ -40,13 +44,44 @@
         </form>
 
         <div class="text-center mt-3">
-        <a href="/registro" class="text-decoration-none text-secondary" style="font-size:0.9rem;">
-            ¿No tienes cuenta? Regístrate
-        </a>
+            <a href="/registro" class="text-decoration-none text-secondary" style="font-size:0.9rem;">
+                ¿No tienes cuenta? Regístrate
+            </a>
         </div>
         <div class="text-center mt-3 footer-text">© Dotaciones Toronto 2026</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function validarCampo(campo) {
+            if (campo.checkValidity()) {
+                campo.classList.remove('is-invalid');
+                campo.classList.add('is-valid');
+            } else {
+                campo.classList.remove('is-valid');
+                campo.classList.add('is-invalid');
+            }
+        }
+
+        document.getElementById('username').addEventListener('input', function() {
+            validarCampo(this);
+        });
+
+        document.getElementById('password').addEventListener('input', function() {
+            validarCampo(this);
+        });
+
+        document.getElementById('formLogin').addEventListener('submit', function(e) {
+            let valido = true;
+            this.querySelectorAll('input').forEach(function(campo) {
+                validarCampo(campo);
+                if (!campo.checkValidity()) valido = false;
+            });
+            if (!valido) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        });
+    </script>
 </body>
 </html>
