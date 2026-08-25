@@ -1,56 +1,173 @@
+/* ==========================================
+   REGISTRO - DISEÑO Y ESPACIADO MEJORADO
+   ========================================== */
+
+/* ===== ESTRUCTURA GENERAL ===== */
 body {
     min-height: 100vh;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    background-image: url('/images/fondo registro.jpg');
+    flex-direction: column;
+    background: url('/images/fondo registro.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ===== NAVBAR ===== */
+.navbar-dt {
+    background-color: rgba(235, 240, 245, 0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #d0d7de;
+    padding: 12px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.navbar-dt .container { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+}
+.navbar-brand { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    text-decoration: none; 
+}
+.navbar-brand img { 
+    width: 30px; 
+    height: 30px; 
+    object-fit: contain; 
+}
+.navbar-brand span { 
+    color: #1a202c; 
+    font-weight: 700; 
+    font-size: 0.95rem; 
+}
+.navbar-actions { 
+    display: flex; 
+    gap: 8px; 
+}
+.btn-ghost { 
+    background: transparent; 
+    border: 1px solid #cbd5e0; 
+    color: #2d3748; 
+    padding: 5px 14px; 
+    border-radius: 6px; 
+    font-size: 0.85rem; 
+    text-decoration: none; 
+    transition: all 0.2s; 
+}
+.btn-ghost:hover { 
+    background: #e2e8f0; 
+    color: #1a202c; 
+    border-color: #a0aec0; 
+}
+.btn-primary-dt { 
+    background: #38a169; 
+    border: 1px solid #2f855a; 
+    color: #ffffff; 
+    padding: 5px 14px; 
+    border-radius: 6px; 
+    font-size: 0.85rem; 
+    text-decoration: none; 
+    transition: all 0.2s; 
+}
+.btn-primary-dt:hover { 
+    background: #2f855a; 
+    color: #ffffff; 
+}
+
+/* ===== CONTENIDO Y TARJETA ===== */
+.page-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
 }
 .login-card {
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(255, 255, 255, 0.96);
     border-radius: 16px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.25);
-    padding: 40px 36px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+    padding: 32px 36px;
     width: 100%;
-    max-width: 420px;
+    max-width: 580px; /* Ancho optimizado para 2 columnas */
 }
-.login-icon {
-    width: 100px;
-    height: 100px;
+.registro-logo {
+    width: 70px;
+    height: 70px;
     object-fit: contain;
-    flex-shrink: 0;
     display: block;
     margin: 0 auto;
 }
-.login-title { font-size: 1.6rem; font-weight: 700; color: #212529; }
-.login-subtitle { color: #6c757d; font-size: 0.9rem; margin-bottom: 24px; }
-.form-control {
-    border-radius: 8px;
-    padding: 10px 14px;
-    border: 1.5px solid #dee2e6;
+.login-title { 
+    font-size: 1.45rem; 
+    font-weight: 700; 
+    color: #1a202c; 
 }
-.form-control:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 3px rgba(13,110,253,0.10);
+.login-subtitle { 
+    color: #718096; 
+    font-size: 0.88rem; 
+    margin-bottom: 12px; 
+}
+
+/* ===== FORMULARIO ===== */
+.form-label {
+    font-size: 0.85rem;
+    color: #2d3748;
+    margin-bottom: 4px;
+}
+.form-control, .form-select {
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    border: 1.5px solid #cbd5e0;
+    background-color: #ffffff;
+    color: #2d3748;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #3182ce;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
 }
 .btn-login {
+    background-color: #38a169;
+    border-color: #2f855a;
+    color: #ffffff;
     border-radius: 8px;
-    padding: 11px;
+    padding: 10px;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.95rem;
+    transition: all 0.2s;
 }
-.footer-text { color: #adb5bd; font-size: 0.8rem; }
-.invalid-feedback, .valid-feedback {
-    display: block;
-    min-height: 20px;
-    font-size: 0.8rem;
+.btn-login:hover {
+    background-color: #2f855a;
+    border-color: #276749;
+    color: #ffffff;
 }
+
+/* ===== VALIDACIONES Y FEEDBACK ===== */
 .invalid-feedback {
-    color: #dc3545;
-    visibility: hidden;
+    display: none;
+    font-size: 0.78rem;
+    color: #e53e3e;
+    margin-top: 2px;
 }
 .is-invalid ~ .invalid-feedback {
-    visibility: visible;
+    display: block;
+}
+
+/* ===== ENLACES Y PIE DE PÁGINA ===== */
+.login-card a.text-secondary {
+    color: #4a5568 !important;
+    transition: color 0.2s;
+}
+.login-card a.text-secondary:hover {
+    color: #2b6cb0 !important;
+}
+.footer-text { 
+    color: #a0aec0; 
+    font-size: 0.78rem; 
 }

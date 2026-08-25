@@ -4,101 +4,130 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pedidos - Dotaciones Toronto</title>
+    <!-- Bootstrap 5 CSS & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Estilo unificado del Admin -->
     <link th:href="@{/css/admin.css}" rel="stylesheet">
 </head>
 <body>
 
-    <!-- Sidebar -->
+    <!-- Sidebar Administrador -->
     <div class="sidebar">
-        <div class="sidebar-brand" style="text-align: center; padding: 15px 0;">
+        <div class="sidebar-brand">
             <img th:src="@{/images/logo blanco.png}" 
-                alt="Logo Dotaciones Toronto" 
-                style="width: 200px; height: 200px; object-fit: contain; display: block; margin: 0 auto 5px;">
-
-            <div style="color: #f5c451; font-weight: 700; font-size: 0.9rem;">
+                 alt="Logo Dotaciones Toronto" 
+                 style="width: 140px; height: auto; object-fit: contain; display: block; margin: 0 auto 8px;">
+            <div style="color: #ffffff; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.5px; text-align: center;">
                 Dotaciones Toronto
             </div>
+            <span class="role-badge">
+                <i class="bi bi-shield-lock-fill me-1"></i> Administrador
+            </span>
         </div>
-        <a href="/admin/panel"><i class="bi bi-house"></i> Inicio</a>
-        <a href="/admin/perfil"><i class="bi bi-person"></i> Perfil</a>
+
+        <a href="/admin/panel"><i class="bi bi-speedometer2"></i> Inicio</a>
+        <a href="/admin/perfil"><i class="bi bi-person-circle"></i> Perfil</a>
         <a href="/admin/usuarios"><i class="bi bi-people"></i> Usuarios</a>
-        <a href="/admin/productos"><i class="bi bi-box"></i> Productos</a>
+        <a href="/admin/productos"><i class="bi bi-box-seam"></i> Productos</a>
         <a href="/admin/inventario"><i class="bi bi-archive"></i> Inventario</a>
-        <a href="/admin/pedidos" class="active"><i class="bi bi-bag"></i> Pedidos</a>
+        <a href="/admin/pedidos" class="active"><i class="bi bi-bag-check"></i> Pedidos</a>
         <a href="/admin/devoluciones"><i class="bi bi-arrow-return-left"></i> Devoluciones</a>
-        <form th:action="@{/logout}" method="post" style="padding: 10px 20px; margin-top: 10px;">
-            <button type="submit" style="background:none; border:none; color:#f87171; cursor:pointer; font-size:0.9rem; padding:0;">
-                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
-            </button>
-        </form>
-            </button>
-        </form>
+        
+        <div style="padding: 15px 24px; margin-top: auto;">
+            <form th:action="@{/logout}" method="post">
+                <button type="submit">
+                    <i class="bi bi-box-arrow-right me-1"></i> Cerrar sesión
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- Contenido principal -->
     <div class="main-content">
-        <h4 class="fw-bold text-dark mb-1">Gestión de Pedidos</h4>
-        <p class="text-muted mb-4">Bienvenido, <span th:text="${nombre}"></span></p>
+        <!-- Encabezado -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold text-dark mb-1">Gestión de Pedidos</h3>
+                <p class="text-muted mb-0">Bienvenido, <span class="fw-semibold text-dark" th:text="${nombre}"></span></p>
+            </div>
+        </div>
 
-        <!-- Tabla de pedidos -->
-        <div class="card border-0 shadow-sm rounded-3">
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead style="background: linear-gradient(90deg, #1a1a2e, #0f3460); color:#e2b96f;">
-                        <tr>
-                            <th class="p-3"># Pedido</th>
-                            <th class="p-3">Cliente</th>
-                            <th class="p-3">Fecha</th>
-                            <th class="p-3">Estado</th>
-                            <th class="p-3">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:if="${#lists.isEmpty(pedidos)}">
-                            <td colspan="5" class="text-center p-4 text-muted">No hay pedidos registrados</td>
-                        </tr>
-                        <tr th:each="pedido : ${pedidos}">
-                            <td class="p-3 fw-bold">#<span th:text="${pedido.id}"></span></td>
-                            <td class="p-3" th:text="${pedido.idUsuario}"></td>
-                            <td class="p-3" th:text="${#temporals.format(pedido.fechaPedido, 'dd/MM/yyyy HH:mm')}"></td>
-                            <td class="p-3">
-                                <span th:class="${'badge ' +
-                                    (pedido.estado == 'Pendiente' ? 'bg-warning text-dark' :
-                                    (pedido.estado == 'Enviado' ? 'bg-info' :
-                                    (pedido.estado == 'Entregado' ? 'bg-success' : 'bg-danger')))}"
-                                    th:text="${pedido.estado}">
-                                </span>
-                            </td>
-                            <td class="p-3 d-flex gap-2">
-                                <form th:action="@{/admin/pedidos/cambiarEstado}" method="post" class="d-flex gap-2">
-                                    <input type="hidden" name="idPedido" th:value="${pedido.id}">
-                                    <select name="estado" class="form-select form-select-sm" style="width:140px;">
-                                        <option value="Pendiente" th:selected="${pedido.estado == 'Pendiente'}">Pendiente</option>
-                                        <option value="Enviado" th:selected="${pedido.estado == 'Enviado'}">Enviado</option>
-                                        <option value="Entregado" th:selected="${pedido.estado == 'Entregado'}">Entregado</option>
-                                        <option value="Cancelado" th:selected="${pedido.estado == 'Cancelado'}">Cancelado</option>
-                                    </select>
-                                    <button type="submit" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-check"></i>
-                                    </button>
-                                </form>
-                                <form th:action="@{/admin/pedidos/ocultar}" method="post"
-                                      onsubmit="return confirm('¿Ocultar este pedido?')">
-                                    <input type="hidden" name="idPedido" th:value="${pedido.id}">
-                                    <button type="submit" class="btn btn-sm btn-secondary">
-                                        <i class="bi bi-eye-slash"></i>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        <!-- Alertas -->
+        <div th:if="${exito}" class="alert alert-success alert-dismissible fade show p-3 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i><span th:text="${exito}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show p-3 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Tabla de pedidos dentro de tarjeta Glass -->
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-0 overflow-hidden" style="border-radius: 14px;">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="p-3 ps-4"># Pedido</th>
+                                <th class="p-3">Cliente (ID)</th>
+                                <th class="p-3">Fecha y Hora</th>
+                                <th class="p-3 text-center">Estado</th>
+                                <th class="p-3 text-end pe-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(pedidos)}">
+                                <td colspan="5" class="text-center p-4 text-muted">No hay pedidos registrados en la base de datos.</td>
+                            </tr>
+                            <tr th:each="pedido : ${pedidos}">
+                                <td class="p-3 ps-4 fw-bold text-secondary" th:text="${'#' + pedido.id}">#1</td>
+                                <td class="p-3 fw-semibold text-dark" th:text="${pedido.idUsuario}">ID Cliente</td>
+                                <td class="p-3 text-muted" th:text="${#temporals.format(pedido.fechaPedido, 'dd/MM/yyyy HH:mm')}">25/08/2026 14:30</td>
+                                <td class="p-3 text-center">
+                                    <span th:class="${'badge ' +
+                                        (pedido.estado == 'Pendiente' ? 'bg-warning text-dark' :
+                                        (pedido.estado == 'Enviado' ? 'bg-info text-dark' :
+                                        (pedido.estado == 'Entregado' ? 'bg-success' : 'bg-danger')))}"
+                                        th:text="${pedido.estado}">
+                                    </span>
+                                </td>
+                                <td class="p-3 text-end pe-4">
+                                    <div class="d-inline-flex gap-2 align-items-center justify-content-end">
+                                        <!-- Formulario para cambiar estado -->
+                                        <form th:action="@{/admin/pedidos/cambiarEstado}" method="post" class="d-inline-flex gap-1">
+                                            <input type="hidden" name="idPedido" th:value="${pedido.id}">
+                                            <select name="estado" class="form-select form-select-sm" style="width: 130px;">
+                                                <option value="Pendiente" th:selected="${pedido.estado == 'Pendiente'}">Pendiente</option>
+                                                <option value="Enviado" th:selected="${pedido.estado == 'Enviado'}">Enviado</option>
+                                                <option value="Entregado" th:selected="${pedido.estado == 'Entregado'}">Entregado</option>
+                                                <option value="Cancelado" th:selected="${pedido.estado == 'Cancelado'}">Cancelado</option>
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Actualizar estado">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                        </form>
+
+                                        <!-- Formulario para ocultar pedido -->
+                                        <form th:action="@{/admin/pedidos/ocultar}" method="post"
+                                              onsubmit="return confirm('¿Está seguro de ocultar este pedido?')">
+                                            <input type="hidden" name="idPedido" th:value="${pedido.id}">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Ocultar pedido">
+                                                <i class="bi bi-eye-slash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
