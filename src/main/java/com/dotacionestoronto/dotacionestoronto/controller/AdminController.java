@@ -244,4 +244,38 @@ public class AdminController {
         }
         return "redirect:/admin/devoluciones";
     }
+
+    // ===== PERFIL =====
+@GetMapping("/perfil")
+public String perfil(Model model) {
+    Usuario usuario = getUsuarioActual();
+    model.addAttribute("usuario", usuario);
+    model.addAttribute("nombre", usuario.getNombre());
+    return "admin/perfil_admin";
+}
+
+@PostMapping("/perfil/actualizar")
+public String actualizarPerfil(
+        @RequestParam String nombre,
+        @RequestParam String correo,
+        @RequestParam String telefono,
+        @RequestParam String direccion,
+        @RequestParam(required = false) String password,
+        Model model) {
+
+    Usuario usuario = getUsuarioActual();
+    if (!nombre.isEmpty()) usuario.setNombre(nombre);
+    if (!correo.isEmpty()) usuario.setCorreo(correo);
+    if (!telefono.isEmpty()) usuario.setTelefono(telefono);
+    if (!direccion.isEmpty()) usuario.setDireccion(direccion);
+    if (password != null && !password.isEmpty()) {
+        usuario.setContrasena(passwordEncoder.encode(password));
+    }
+    usuarioRepository.save(usuario);
+
+    model.addAttribute("usuario", usuario);
+    model.addAttribute("nombre", usuario.getNombre());
+    model.addAttribute("exito", "Perfil actualizado correctamente.");
+    return "admin/perfil_admin";
+}
 }

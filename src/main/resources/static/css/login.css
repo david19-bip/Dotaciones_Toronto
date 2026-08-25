@@ -1,12 +1,42 @@
-    body {
+           .navbar-dt {
+            background-color: #0c0c0c;
+            border-bottom: 1px solid #f3f4f5;
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            opacity: 0.5;
+            }
+        .navbar-dt .container { display: flex; align-items: center; justify-content: space-between; }
+        .navbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .navbar-brand img { width: 32px; height: 32px; object-fit: contain; }
+        .navbar-brand span { color: #e6edf3; font-weight: 700; font-size: 1rem; }
+        .navbar-links { display: flex; align-items: center; gap: 24px; list-style: none; }
+        .navbar-links a { color: #e6edf3; text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+        .navbar-links a:hover { color: #58a6ff; }
+        .navbar-actions { display: flex; gap: 10px; }
+        .btn-ghost { background: transparent; border: 1px solid #30363d; color: #e6edf3; padding: 6px 16px; border-radius: 6px; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; }
+        .btn-ghost:hover { background: #21262d; color: #e6edf3; border-color: #8b949e; }
+        .btn-primary-dt { background: #238636; border: 1px solid #2ea043; color: #fff; padding: 6px 16px; border-radius: 6px; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; }
+        .btn-primary-dt:hover { background: #2ea043; color: #fff; }
+        
+        body {
         min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background-image: url('/images/fondo login.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+}
+
+    .page-content {
+        flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
-        background-image: url('../images/fondo login.jpg');  background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-    }
+        padding: 40px 16px;
+}
     .login-card {
         background: rgba(255, 255, 255, 0.92);
         border-radius: 16px;

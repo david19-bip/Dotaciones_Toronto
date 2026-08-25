@@ -79,4 +79,9 @@ public class UsuarioController {
         model.addAttribute("exito", "Usuario registrado correctamente. Ya puedes iniciar sesión.");
         return "registro";
     }
+    
+    @GetMapping("/")
+    public String index() {
+        return "index";
+    }
 }
