@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devoluciones - Dotaciones Toronto</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+:root {
+    --tor-orange: #fa813b;
+    --tor-dark: #1E293B;
+    --tor-bg: #f5f6f8;
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--tor-bg);
+    color: var(--tor-dark);
+}
+.sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 230px;
+    height: 100vh;
+    background: var(--tor-dark);
+    display: flex;
+    flex-direction: column;
+    padding-top: 10px;
+    overflow-y: auto;
+}
+.sidebar-brand { padding: 15px 0; }
+.sidebar a {
+    display: block;
+    padding: 12px 20px;
+    color: #cbd5e1;
+    text-decoration: none;
+    font-size: 0.92rem;
+    border-left: 3px solid transparent;
+    transition: background 0.15s, color 0.15s;
+}
+.sidebar a i { margin-right: 10px; width: 18px; text-align: center; }
+.sidebar a:hover { background: rgba(250,129,59,0.08); color: #fff; }
+.sidebar a.active {
+    background: rgba(250,129,59,0.15);
+    color: var(--tor-orange);
+    border-left-color: var(--tor-orange);
+    font-weight: 600;
+}
+.main-content {
+    margin-left: 230px;
+    padding: 32px 36px;
+}
+.card-stat {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.card-stat .icon {
+    width: 46px; height: 46px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+}
+.badge-estado {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.badge-pendiente { background: #fef3c7; color: #92400e; }
+.badge-proceso { background: #dbeafe; color: #1e40af; }
+.badge-entregado { background: #d1fae5; color: #065f46; }
+.badge-cancelado { background: #fee2e2; color: #991b1b; }
+.btn-toronto {
+    background: var(--tor-orange);
+    border: none;
+    color: #fff;
+    font-weight: 600;
+}
+.btn-toronto:hover { background: #e06a28; color: #fff; }
+.producto-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; transition: transform .15s, box-shadow .15s; }
+.producto-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
+.producto-img { height: 160px; background: #eef1f5; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 2rem; }
+
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-brand text-center">
+            <img src="../images/logo-blanco.png" alt="Logo Dotaciones Toronto"
+                 style="width:140px;height:140px;object-fit:contain;display:block;margin:0 auto 5px;">
+            <div style="color:#fa813b;font-weight:700;font-size:0.9rem;">Dotaciones Toronto</div>
+        </div>
+        <a href="/cliente/panel"><i class="bi bi-house"></i> Inicio</a>
+        <a href="/cliente/perfil"><i class="bi bi-person"></i> Perfil</a>
+        <a href="/cliente/productos"><i class="bi bi-bag"></i> Productos</a>
+        <a href="/cliente/pedidos"><i class="bi bi-receipt"></i> Pedidos</a>
+        <a href="/cliente/devoluciones" class="active"><i class="bi bi-arrow-return-left"></i> Devoluciones</a>
+        <a href="/cliente/nosotros"><i class="bi bi-info-circle"></i> Nosotros</a>
+        <a href="/cliente/contactanos"><i class="bi bi-envelope"></i> Contáctanos</a>
+        <form action="/logout" method="post" style="padding:10px 20px;margin-top:10px;">
+            <button type="submit" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:0.9rem;padding:0;">
+                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+            </button>
+        </form>
+    </div>
+
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <h4 class="fw-bold mb-0">Mis devoluciones</h4>
+            <button class="btn btn-toronto btn-sm" data-bs-toggle="modal" data-bs-target="#modalDevolucion">
+                <i class="bi bi-plus-lg"></i> Solicitar devolución
+            </button>
+        </div>
+        <p class="text-muted mb-4">Historial y estado de tus solicitudes de devolución</p>
+
+        <div class="card-stat p-3">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr class="text-muted" style="font-size:0.85rem;">
+                            <th>Solicitud</th>
+                            <th>Pedido asociado</th>
+                            <th>Motivo</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="fw-semibold">DEV-021</td>
+                            <td>PED-1031</td>
+                            <td>Talla incorrecta</td>
+                            <td>18/08/2026</td>
+                            <td><span class="badge-estado badge-proceso">En revisión</span></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">DEV-014</td>
+                            <td>PED-0998</td>
+                            <td>Producto defectuoso</td>
+                            <td>02/07/2026</td>
+                            <td><span class="badge-estado badge-entregado">Aprobada</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Modal solicitar devolución -->
+        <div class="modal fade" id="modalDevolucion" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold">Solicitar devolución</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Pedido</label>
+                            <select class="form-select">
+                                <option>PED-1042</option>
+                                <option>PED-1039</option>
+                                <option>PED-1031</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Motivo</label>
+                            <select class="form-select">
+                                <option>Talla incorrecta</option>
+                                <option>Producto defectuoso</option>
+                                <option>No era lo que pedí</option>
+                                <option>Otro</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Detalle</label>
+                            <textarea class="form-control" rows="3" placeholder="Cuéntanos qué pasó..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button class="btn btn-toronto">Enviar solicitud</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
