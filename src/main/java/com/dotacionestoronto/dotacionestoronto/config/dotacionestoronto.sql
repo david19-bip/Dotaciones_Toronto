@@ -1,3 +1,4 @@
+DROP DATABASE IF EXISTS dotacionestoronto;
 CREATE DATABASE dotacionestoronto;
 USE dotacionestoronto;
 
