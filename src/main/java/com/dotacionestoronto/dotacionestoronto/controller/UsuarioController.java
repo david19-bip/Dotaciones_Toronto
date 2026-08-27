@@ -77,7 +77,7 @@ public class UsuarioController {
         usuarioRepository.save(usuario);
 
         model.addAttribute("exito", "Usuario registrado correctamente. Ya puedes iniciar sesión.");
-        return "registro";
+        return "redirect:/login?registro";
     }
     
     @GetMapping("/")

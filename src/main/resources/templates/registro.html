@@ -37,7 +37,7 @@
             <div th:if="${exito}" class="alert alert-success py-2 px-3 fs-6 mb-3" th:text="${exito}"></div>
 
             <form th:action="@{/registro}" method="post" novalidate id="formRegistro">
-                
+
                 <!-- Fila 1: Nombre y Documento -->
                 <div class="row g-3 mb-2">
                     <div class="col-md-6">
@@ -83,7 +83,7 @@
                     </div>
                 </div>
 
-                <!-- Fila 3: Dirección (Ancho completo) -->
+                <!-- Fila 3: Dirección -->
                 <div class="mb-2">
                     <label class="form-label fw-semibold">Dirección</label>
                     <input type="text" name="direccion" id="direccion" class="form-control"
@@ -95,15 +95,18 @@
 
                 <!-- Fila 4: Contraseña y Rol -->
                 <div class="row g-3 mb-4">
-                    <div class="col-md-6">
+                    <div class="col-12">
                         <label class="form-label fw-semibold">Contraseña</label>
-                        <input type="password" name="password" id="password" class="form-control"
-                               placeholder="••••••••"
-                               minlength="6"
-                               required>
+                        <div class="input-group">
+                            <input type="password" name="password" id="password" class="form-control"
+                                   placeholder="••••••••" required minlength="6">
+                            <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                                <i class="bi bi-eye" id="eyeIcon"></i>
+                            </button>
+                        </div>
                         <div class="invalid-feedback">Mínimo 6 caracteres.</div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12">
                         <label class="form-label fw-semibold">Rol</label>
                         <select name="rol" id="rol" class="form-control form-select" required>
                             <option value="">Seleccione rol</option>
@@ -156,6 +159,7 @@
         document.getElementById('rol').addEventListener('change', function() {
             validarCampo(this);
         });
+
         function validarCampo(campo) {
             if (campo.checkValidity()) {
                 campo.classList.remove('is-invalid');
@@ -165,6 +169,7 @@
                 campo.classList.add('is-invalid');
             }
         }
+
         document.getElementById('formRegistro').addEventListener('submit', function(e) {
             let valido = true;
             this.querySelectorAll('input, select').forEach(function(campo) {
@@ -174,6 +179,21 @@
             if (!valido) {
                 e.preventDefault();
                 e.stopPropagation();
+            }
+        });
+
+        // ===== OJO CONTRASEÑA =====
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const input = document.getElementById('password');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
             }
         });
     </script>

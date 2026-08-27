@@ -9,7 +9,7 @@
     <link th:href="@{/css/login.css}" rel="stylesheet">
 </head>
 <body>
-   <!-- NAVBAR -->
+    <!-- NAVBAR -->
     <nav class="navbar-dt">
         <div class="container">
             <a href="/" class="navbar-brand">
@@ -24,47 +24,59 @@
         </div>
     </nav>
 
-<div class="page-content">
-    <div class="login-card">
-        <div class="text-center mb-3">
-            <div style="width: 100px; height: 100px; margin: 0 auto; overflow: hidden;">
-                <img th:src="@{/images/logo negro.png}" alt="Logo" style="width: 100px; height: 100px; object-fit: contain; display: block;">
+    <div class="page-content">
+        <div class="login-card">
+            <div class="text-center mb-3">
+                <div style="width: 100px; height: 100px; margin: 0 auto; overflow: hidden;">
+                    <img th:src="@{/images/logo negro.png}" alt="Logo" style="width: 100px; height: 100px; object-fit: contain; display: block;">
+                </div>
+                <div class="login-title mt-2">Dotaciones Toronto</div>
+                <div class="login-subtitle">Inicia sesión para continuar</div>
             </div>
-            <div class="login-title mt-2">Dotaciones Toronto</div>
-            <div class="login-subtitle">Inicia sesión para continuar</div>
-        </div>
 
-        <div th:if="${param.error}" class="alert alert-danger p-2 fs-6">
-            Correo o contraseña incorrectos.
-        </div>
-        <div th:if="${param.logout}" class="alert alert-info p-2 fs-6">
-            Sesión cerrada correctamente.
-        </div>
-
-        <form th:action="@{/login}" method="post" novalidate id="formLogin">
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Correo electrónico</label>
-                <input type="email" name="username" id="username" class="form-control"
-                       placeholder="correo@ejemplo.com" required autofocus>
-                <div class="invalid-feedback">Ingrese un correo electrónico válido.</div>
+            <div th:if="${param.error}" class="alert alert-danger p-2 fs-6">
+                <i class="bi bi-exclamation-circle me-1"></i> Correo o contraseña incorrectos.
             </div>
-            <div class="mb-4">
-                <label class="form-label fw-semibold">Contraseña</label>
-                <input type="password" name="password" id="password" class="form-control"
-                       placeholder="••••••••" required minlength="6">
-                <div class="invalid-feedback">La contraseña debe tener al menos 6 caracteres.</div>
+            <div th:if="${param.inhabilitado}" class="alert alert-warning p-2 fs-6">
+                <i class="bi bi-ban me-1"></i> Usuario inhabilitado. Contacte al administrador.
             </div>
-            <button type="submit" class="btn btn-primary btn-login w-100">
-                <i class="bi bi-box-arrow-in-right me-1"></i> Iniciar sesión
-            </button>
-        </form>
+            <div th:if="${param.logout}" class="alert alert-info p-2 fs-6">
+                <i class="bi bi-check-circle me-1"></i> Sesión cerrada correctamente.
+            </div>
+            <div th:if="${param.registro}" class="alert alert-success p-2 fs-6">
+                <i class="bi bi-check-circle me-1"></i> Registro exitoso. Ya puedes iniciar sesión.
+            </div>
 
-        <div class="text-center mt-3">
-            <a href="/registro" class="text-decoration-none text-secondary" style="font-size:0.9rem;">
-                ¿No tienes cuenta? Regístrate
-            </a>
+            <form th:action="@{/login}" method="post" novalidate id="formLogin">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Correo electrónico</label>
+                    <input type="email" name="username" id="username" class="form-control"
+                           placeholder="correo@ejemplo.com" required autofocus>
+                    <div class="invalid-feedback">Ingrese un correo electrónico válido.</div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Contraseña</label>
+                    <div class="input-group">
+                        <input type="password" name="password" id="password" class="form-control"
+                               placeholder="••••••••" required minlength="6">
+                        <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                            <i class="bi bi-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                    <div class="invalid-feedback">La contraseña debe tener al menos 6 caracteres.</div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-login w-100">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Iniciar sesión
+                </button>
+            </form>
+
+            <div class="text-center mt-3">
+                <a href="/registro" class="text-decoration-none text-secondary" style="font-size:0.9rem;">
+                    ¿No tienes cuenta? Regístrate
+                </a>
+            </div>
+            <div class="text-center mt-3 footer-text">© Dotaciones Toronto 2026</div>
         </div>
-        <div class="text-center mt-3 footer-text">© Dotaciones Toronto 2026</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -96,6 +108,21 @@
             if (!valido) {
                 e.preventDefault();
                 e.stopPropagation();
+            }
+        });
+
+        // ===== OJO CONTRASEÑA =====
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const input = document.getElementById('password');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
             }
         });
     </script>

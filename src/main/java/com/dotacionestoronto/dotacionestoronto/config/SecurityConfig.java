@@ -3,8 +3,10 @@ package com.dotacionestoronto.dotacionestoronto.config;
 import com.dotacionestoronto.dotacionestoronto.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -67,13 +69,26 @@ public class SecurityConfig {
             // LOGIN
             // ==========================================
 
-            .formLogin(form -> form
-                .loginPage("/login")
-                .loginProcessingUrl("/login")
-                .successHandler(new CustomSuccessHandler())
-                .failureUrl("/login?error")
-                .permitAll()
-            )
+.formLogin(form -> form
+    .loginPage("/login")
+    .loginProcessingUrl("/login")
+    .successHandler(new CustomSuccessHandler())
+.failureHandler((request, response, exception) -> {
+    String mensaje = exception.getMessage() != null ? exception.getMessage() : "";
+    Throwable causa = exception.getCause();
+    String mensajeCausa = causa != null && causa.getMessage() != null ? causa.getMessage() : "";
+    
+    if (mensaje.contains("inhabilitado") || mensajeCausa.contains("inhabilitado")
+        || exception.getClass().getSimpleName().contains("Disabled")
+        || (causa != null && causa.getClass().getSimpleName().contains("Disabled"))) {
+        response.sendRedirect("/login?inhabilitado");
+    } else {
+        response.sendRedirect("/login?error");
+            }
+        })
+    
+    .permitAll()
+)
 
             // ==========================================
             // LOGOUT

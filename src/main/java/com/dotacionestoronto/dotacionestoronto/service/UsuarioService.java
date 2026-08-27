@@ -1,9 +1,11 @@
 package com.dotacionestoronto.dotacionestoronto.service;
 
 import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
+import org.springframework.security.authentication.DisabledException;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.*;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
@@ -16,29 +18,28 @@ public class UsuarioService implements UserDetailsService {
     private UsuarioRepository usuarioRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String correo) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByCorreo(correo);
-        if (usuario == null) {
-            throw new UsernameNotFoundException("Usuario no encontrado: " + correo);
-        }
+public UserDetails loadUserByUsername(String correo) throws UsernameNotFoundException {
+    Usuario usuario = usuarioRepository.findByCorreo(correo);
+    if (usuario == null) {
+        throw new UsernameNotFoundException("Correo o contraseña incorrectos");
+    }
 
-        // Verificar si el usuario está inhabilitado
-        if ("Inhabilitado".equals(usuario.getEstado())) {
-            throw new UsernameNotFoundException("Usuario inhabilitado");
-        }
+    if ("Inhabilitado".equals(usuario.getEstado())) {
+        throw new DisabledException("Usuario inhabilitado");
+    }
 
-        String rol = switch (usuario.getIdRol()) {
-            case 1 -> "ROLE_ADMIN";
-            case 2 -> "ROLE_CLIENTE";
-            case 3 -> "ROLE_VENDEDOR";
-            case 4 -> "ROLE_BODEGUERO";
-            default -> "ROLE_CLIENTE";
-        };
+    String rol = switch (usuario.getIdRol()) {
+        case 1 -> "ROLE_ADMIN";
+        case 2 -> "ROLE_CLIENTE";
+        case 3 -> "ROLE_VENDEDOR";
+        case 4 -> "ROLE_BODEGUERO";
+        default -> "ROLE_CLIENTE";
+    };
 
-        return new org.springframework.security.core.userdetails.User(
-            usuario.getCorreo(),
-            usuario.getContrasena(),
-            List.of(new SimpleGrantedAuthority(rol))
-        );
+    return new org.springframework.security.core.userdetails.User(
+        usuario.getCorreo(),
+        usuario.getContrasena(),
+        List.of(new SimpleGrantedAuthority(rol))
+    );
     }
 }
