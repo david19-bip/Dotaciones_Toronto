@@ -1,5 +1,24 @@
 package com.dotacionestoronto.dotacionestoronto.controller;
 
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
 import com.dotacionestoronto.dotacionestoronto.entity.Inventario;
 import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
@@ -10,21 +29,6 @@ import com.dotacionestoronto.dotacionestoronto.repository.InventarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import java.nio.file.Path;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
 
 @Controller
 @RequestMapping("/admin")
@@ -129,33 +133,37 @@ public class AdminController {
         return "admin/productos_admin";
     }
 
-@PostMapping("/productos/crear")
-public String crearProducto(
-        @RequestParam String nombre,
-        @RequestParam BigDecimal precio,
-        @RequestParam String talla,
-        @RequestParam String color,
-        @RequestParam(required = false) MultipartFile imagen) throws IOException {
+    @PostMapping("/productos/crear")
+    public String crearProducto(
+            @RequestParam String nombre,
+            @RequestParam BigDecimal precio,
+            @RequestParam String talla,
+            @RequestParam String color,
+            @RequestParam(required = false) MultipartFile imagen) throws IOException {
 
-    Producto producto = new Producto();
-    producto.setNombre(nombre);
-    producto.setPrecio(precio);
-    producto.setTalla(talla);
-    producto.setColor(color);
-    producto.setEstado("Disponible");
-    producto.setInhabilitado(false);
+        Producto producto = new Producto();
+        producto.setNombre(nombre);
+        producto.setPrecio(precio);
+        producto.setTalla(talla);
+        producto.setColor(color);
+        producto.setEstado("Disponible");
+        producto.setInhabilitado(false);
 
-    if (imagen != null && !imagen.isEmpty()) {
-        String nombreArchivo = System.currentTimeMillis() + "_" + imagen.getOriginalFilename();
-        Path ruta = Paths.get("src/main/resources/static/images/productos/" + nombreArchivo);
-        Files.createDirectories(ruta.getParent());
-        Files.write(ruta, imagen.getBytes());
-        producto.setImagen("images/productos/" + nombreArchivo);
+        if (imagen != null && !imagen.isEmpty()) {
+            String nombreArchivo = System.currentTimeMillis() + "_" + imagen.getOriginalFilename();
+            Path ruta = Paths.get("uploads/productos/" + nombreArchivo);
+
+            // TEMPORAL: para ver dónde se está guardando realmente
+            System.out.println(">>> Guardando imagen en: " + ruta.toAbsolutePath());
+
+            Files.createDirectories(ruta.getParent());
+            Files.write(ruta, imagen.getBytes());
+            producto.setImagen("images/productos/" + nombreArchivo);
+        }
+
+        productoRepository.save(producto);
+        return "redirect:/admin/productos";
     }
-
-    productoRepository.save(producto);
-    return "redirect:/admin/productos";
-}
 
     @PostMapping("/productos/toggleEstado")
     public String toggleEstadoProducto(@RequestParam Long idProducto) {
@@ -260,36 +268,36 @@ public String crearProducto(
     }
 
     // ===== PERFIL =====
-@GetMapping("/perfil")
-public String perfil(Model model) {
-    Usuario usuario = getUsuarioActual();
-    model.addAttribute("usuario", usuario);
-    model.addAttribute("nombre", usuario.getNombre());
-    return "admin/perfil_admin";
-}
-
-@PostMapping("/perfil/actualizar")
-public String actualizarPerfil(
-        @RequestParam String nombre,
-        @RequestParam String correo,
-        @RequestParam String telefono,
-        @RequestParam String direccion,
-        @RequestParam(required = false) String password,
-        Model model) {
-
-    Usuario usuario = getUsuarioActual();
-    if (!nombre.isEmpty()) usuario.setNombre(nombre);
-    if (!correo.isEmpty()) usuario.setCorreo(correo);
-    if (!telefono.isEmpty()) usuario.setTelefono(telefono);
-    if (!direccion.isEmpty()) usuario.setDireccion(direccion);
-    if (password != null && !password.isEmpty()) {
-        usuario.setContrasena(passwordEncoder.encode(password));
+    @GetMapping("/perfil")
+    public String perfil(Model model) {
+        Usuario usuario = getUsuarioActual();
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("nombre", usuario.getNombre());
+        return "admin/perfil_admin";
     }
-    usuarioRepository.save(usuario);
 
-    model.addAttribute("usuario", usuario);
-    model.addAttribute("nombre", usuario.getNombre());
-    model.addAttribute("exito", "Perfil actualizado correctamente.");
-    return "admin/perfil_admin";
-}
+    @PostMapping("/perfil/actualizar")
+    public String actualizarPerfil(
+            @RequestParam String nombre,
+            @RequestParam String correo,
+            @RequestParam String telefono,
+            @RequestParam String direccion,
+            @RequestParam(required = false) String password,
+            Model model) {
+
+        Usuario usuario = getUsuarioActual();
+        if (!nombre.isEmpty()) usuario.setNombre(nombre);
+        if (!correo.isEmpty()) usuario.setCorreo(correo);
+        if (!telefono.isEmpty()) usuario.setTelefono(telefono);
+        if (!direccion.isEmpty()) usuario.setDireccion(direccion);
+        if (password != null && !password.isEmpty()) {
+            usuario.setContrasena(passwordEncoder.encode(password));
+        }
+        usuarioRepository.save(usuario);
+
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("nombre", usuario.getNombre());
+        model.addAttribute("exito", "Perfil actualizado correctamente.");
+        return "admin/perfil_admin";
+    }
 }
