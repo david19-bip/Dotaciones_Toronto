@@ -83,7 +83,7 @@
                 <div class="producto-card">
                     <div class="producto-img">
                         <img th:if="${producto.imagen != null and !producto.imagen.isEmpty()}"
-                             th:src="${producto.imagen}" alt="Producto"
+                             th:src="@{'/' + ${producto.imagen}}" alt="Producto"
                              style="width:100%; height:100%; object-fit:cover;">
                         <i th:unless="${producto.imagen != null and !producto.imagen.isEmpty()}" class="bi bi-tshirt"></i>
                     </div>
