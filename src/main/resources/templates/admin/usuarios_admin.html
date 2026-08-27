@@ -109,6 +109,12 @@
                                     </span>
                                 </td>
                                 <td class="p-3 text-end pe-4">
+                                    <!-- Botón de Modificar con Lápiz -->
+                                    <a th:href="@{/admin/usuarios/editar(id=${usuario.id})}" class="btn btn-sm btn-outline-primary me-1" title="Modificar">
+                                        <i class="bi bi-pencil-fill"></i>
+                                    </a>
+
+                                    <!-- Formulario existente para Inhabilitar / Habilitar -->
                                     <form th:action="@{/admin/usuarios/toggleEstado}" method="post" class="d-inline">
                                         <input type="hidden" name="idUsuario" th:value="${usuario.id}">
                                         <button type="submit"
