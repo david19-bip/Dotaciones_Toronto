@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario - Dotaciones Toronto</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link th:href="@{/css/admin.css}" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-brand" style="text-align: center; padding: 15px 0;">
+            <img th:src="@{/images/logo blanco.png}" 
+                alt="Logo Dotaciones Toronto" 
+                style="width: 200px; height: 200px; object-fit: contain; display: block; margin: 0 auto 5px;">
+
+            <div style="color: #f5c451; font-weight: 700; font-size: 0.9rem;">
+                Dotaciones Toronto
+            </div>
+        </div>
+        <a href="/bodeguero/panel"><i class="bi bi-house"></i> Inicio</a>
+        <a href="/bodeguero/perfil"><i class="bi bi-person"></i> Perfil</a>
+        <a href="/bodeguero/inventario" class="active"><i class="bi bi-archive"></i> Inventario</a>
+        <form th:action="@{/logout}" method="post" style="padding: 10px 20px; margin-top: 10px;">
+            <button type="submit" style="background:none; border:none; color:#f87171; cursor:pointer; font-size:0.9rem; padding:0;">
+                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+            </button>
+        </form>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="fw-bold text-dark mb-1">Gestión de Inventario</h4>
+                <p class="text-muted mb-0">Bienvenido, <span th:text="${nombre}"></span></p>
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrearInventario">
+                <i class="bi bi-plus-circle me-1"></i> Agregar Inventario
+            </button>
+        </div>
+
+        <!-- Alertas -->
+        <div th:if="${exito}" class="alert alert-success" th:text="${exito}"></div>
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+        <!-- Tabla de inventario -->
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead style="background: linear-gradient(90deg, #1a1a2e, #0f3460); color:#e2b96f;">
+                        <tr>
+                            <th class="p-3"># ID</th>
+                            <th class="p-3">Producto</th>
+                            <th class="p-3">Cantidad Actual</th>
+                            <th class="p-3">Stock Mínimo</th>
+                            <th class="p-3">Estado</th>
+                            <th class="p-3">Actualizar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(inventarios)}">
+                            <td colspan="6" class="text-center p-4 text-muted">No hay registros de inventario</td>
+                        </tr>
+                        <tr th:each="inv : ${inventarios}">
+                            <td class="p-3 fw-bold" th:text="${inv.id}"></td>
+                            <td class="p-3" th:text="${inv.idProducto}"></td>
+                            <td class="p-3" th:text="${inv.cantidadActual}"></td>
+                            <td class="p-3" th:text="${inv.stockMinimo}"></td>
+                            <td class="p-3">
+                                <span th:class="${'badge ' + (inv.cantidadActual <= inv.stockMinimo ? 'bg-danger' : 'bg-success')}"
+                                      th:text="${inv.cantidadActual <= inv.stockMinimo ? 'Stock bajo' : 'Normal'}">
+                                </span>
+                            </td>
+                            <td class="p-3">
+                                <form th:action="@{/bodeguero/inventario/actualizar}" method="post" class="d-flex gap-2">
+                                    <input type="hidden" name="idInventario" th:value="${inv.id}">
+                                    <input type="number" name="cantidadActual" class="form-control form-control-sm"
+                                           th:value="${inv.cantidadActual}" style="width:90px;" min="0">
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-save"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Agregar Inventario -->
+    <div class="modal fade" id="modalCrearInventario" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(90deg, #1a1a2e, #0f3460);">
+                    <h5 class="modal-title text-white"><i class="bi bi-plus-circle me-2"></i>Agregar Inventario</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form th:action="@{/bodeguero/inventario/crear}" method="post">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Producto</label>
+                            <select name="idProducto" class="form-control" required>
+                                <option value="">Seleccione un producto</option>
+                                <option th:each="producto : ${productos}"
+                                        th:value="${producto.id}"
+                                        th:text="${producto.nombre + ' - ' + producto.talla + ' - ' + producto.color}">
+                                </option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Cantidad Actual</label>
+                            <input type="number" name="cantidadActual" class="form-control"
+                                   placeholder="Cantidad en stock" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Stock Mínimo</label>
+                            <input type="number" name="stockMinimo" class="form-control"
+                                   placeholder="Stock mínimo permitido" min="0" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                            <i class="bi bi-plus-circle me-1"></i> Agregar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
