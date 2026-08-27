@@ -1,5 +1,24 @@
 package com.dotacionestoronto.dotacionestoronto.controller;
 
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
 import com.dotacionestoronto.dotacionestoronto.entity.Inventario;
 import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
@@ -10,21 +29,6 @@ import com.dotacionestoronto.dotacionestoronto.repository.InventarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
 
 @Controller
 @RequestMapping("/admin")
@@ -191,7 +195,11 @@ public class AdminController {
 
         if (imagen != null && !imagen.isEmpty()) {
             String nombreArchivo = System.currentTimeMillis() + "_" + imagen.getOriginalFilename();
-            Path ruta = Paths.get("src/main/resources/static/images/productos/" + nombreArchivo);
+            Path ruta = Paths.get("uploads/productos/" + nombreArchivo);
+
+            // TEMPORAL: para ver dónde se está guardando realmente
+            System.out.println(">>> Guardando imagen en: " + ruta.toAbsolutePath());
+
             Files.createDirectories(ruta.getParent());
             Files.write(ruta, imagen.getBytes());
             producto.setImagen("images/productos/" + nombreArchivo);

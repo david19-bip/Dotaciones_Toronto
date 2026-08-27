@@ -1,6 +1,11 @@
 package com.dotacionestoronto.dotacionestoronto.controller;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -9,14 +14,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.dotacionestoronto.dotacionestoronto.entity.DetallePedido;
 import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
 import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
 import com.dotacionestoronto.dotacionestoronto.entity.Producto;
 import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
+import com.dotacionestoronto.dotacionestoronto.repository.DetallePedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.DevolucionRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
@@ -37,6 +46,9 @@ public class ClienteController {
 
     @Autowired
     private DevolucionRepository devolucionRepository;
+
+    @Autowired
+    private DetallePedidoRepository detallePedidoRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -90,10 +102,55 @@ public class ClienteController {
         List<Pedido> pedidos =
                 pedidoRepository.findByIdUsuarioAndOcultoFalseOrderByFechaPedidoDesc(usuario.getId());
 
-        model.addAttribute("pedidos", pedidos);
+        List<PedidoResumen> resumenes = new ArrayList<>();
+        for (Pedido p : pedidos) {
+            List<DetallePedido> detalles = detallePedidoRepository.findByIdPedido(p.getId());
+
+            int cantidadTotal = detalles.stream()
+                    .mapToInt(DetallePedido::getCantidad)
+                    .sum();
+
+            BigDecimal total = detalles.stream()
+                    .map(d -> d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            resumenes.add(new PedidoResumen(p.getId(), p.getFechaPedido(), p.getEstado(), cantidadTotal, total));
+        }
+
+        model.addAttribute("pedidos", resumenes);
         model.addAttribute("nombre", usuario.getNombre());
 
         return "cliente/pedidos_cliente";
+    }
+
+    @GetMapping("/pedidos/{id}/detalle")
+    @ResponseBody
+    public List<Map<String, Object>> detallePedido(@PathVariable Long id) {
+        Usuario usuario = getUsuarioActual();
+
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Pedido no encontrado"));
+
+        // Evita que un cliente vea el detalle de un pedido que no es suyo
+        if (!pedido.getIdUsuario().equals(usuario.getId())) {
+            throw new RuntimeException("No autorizado para ver este pedido");
+        }
+
+        List<DetallePedido> detalles = detallePedidoRepository.findByIdPedido(id);
+        List<Map<String, Object>> resultado = new ArrayList<>();
+
+        for (DetallePedido d : detalles) {
+            Producto producto = productoRepository.findById(d.getIdProducto()).orElse(null);
+
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("producto", producto != null ? producto.getNombre() : "Producto eliminado");
+            item.put("cantidad", d.getCantidad());
+            item.put("precioUnitario", d.getPrecioUnitario());
+            item.put("subtotal", d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad())));
+            resultado.add(item);
+        }
+
+        return resultado;
     }
 
     // ==========================================
@@ -200,5 +257,30 @@ public class ClienteController {
         model.addAttribute("exito", "Tu mensaje fue enviado. Te contactaremos pronto.");
 
         return "cliente/nosotros_cliente";
+    }
+
+    // ==========================================
+    // CLASE AUXILIAR: resumen de pedido para la vista
+    // ==========================================
+    public static class PedidoResumen {
+        private Long id;
+        private LocalDateTime fecha;
+        private String estado;
+        private Integer cantidadProductos;
+        private BigDecimal total;
+
+        public PedidoResumen(Long id, LocalDateTime fecha, String estado, Integer cantidadProductos, BigDecimal total) {
+            this.id = id;
+            this.fecha = fecha;
+            this.estado = estado;
+            this.cantidadProductos = cantidadProductos;
+            this.total = total;
+        }
+
+        public Long getId() { return id; }
+        public LocalDateTime getFecha() { return fecha; }
+        public String getEstado() { return estado; }
+        public Integer getCantidadProductos() { return cantidadProductos; }
+        public BigDecimal getTotal() { return total; }
     }
 }
