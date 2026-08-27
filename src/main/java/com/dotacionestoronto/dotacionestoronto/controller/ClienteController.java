@@ -1,6 +1,7 @@
 package com.dotacionestoronto.dotacionestoronto.controller;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -19,17 +20,22 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.dotacionestoronto.dotacionestoronto.entity.DetallePedido;
+import com.dotacionestoronto.dotacionestoronto.entity.DetalleVenta;
 import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
 import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
 import com.dotacionestoronto.dotacionestoronto.entity.Producto;
 import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
+import com.dotacionestoronto.dotacionestoronto.entity.Venta;
 import com.dotacionestoronto.dotacionestoronto.repository.DetallePedidoRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.DetalleVentaRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.DevolucionRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.VentaRepository;
 
 @Controller
 @RequestMapping("/cliente")
@@ -49,6 +55,12 @@ public class ClienteController {
 
     @Autowired
     private DetallePedidoRepository detallePedidoRepository;
+
+    @Autowired
+    private VentaRepository ventaRepository;
+
+    @Autowired
+    private DetalleVentaRepository detalleVentaRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -131,7 +143,6 @@ public class ClienteController {
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Pedido no encontrado"));
 
-        // Evita que un cliente vea el detalle de un pedido que no es suyo
         if (!pedido.getIdUsuario().equals(usuario.getId())) {
             throw new RuntimeException("No autorizado para ver este pedido");
         }
@@ -163,10 +174,131 @@ public class ClienteController {
 
         List<Devolucion> devoluciones = devolucionRepository.findByUsuario(usuario.getId());
 
-        model.addAttribute("devoluciones", devoluciones);
+        List<DevolucionResumen> resumenes = new ArrayList<>();
+        for (Devolucion d : devoluciones) {
+            String pedidoRef = "N/D";
+            String productoNombre = "Producto eliminado";
+
+            DetalleVenta detalleVenta = detalleVentaRepository.findById(d.getIdDetalleVenta()).orElse(null);
+            if (detalleVenta != null) {
+                Venta venta = ventaRepository.findById(detalleVenta.getIdVenta()).orElse(null);
+                if (venta != null && venta.getIdPedido() != null) {
+                    pedidoRef = "PED-" + venta.getIdPedido();
+                }
+                Producto producto = productoRepository.findById(detalleVenta.getIdProducto()).orElse(null);
+                if (producto != null) {
+                    productoNombre = producto.getNombre();
+                }
+            }
+
+            resumenes.add(new DevolucionResumen(
+                    d.getId(), pedidoRef, productoNombre, d.getMotivo(), d.getFechaDevolucion(), d.getEstado()));
+        }
+
+        // Solo pedidos ya entregados pueden tener una devolución solicitada
+        List<Pedido> pedidosEntregados =
+                pedidoRepository.findByIdUsuarioAndEstado(usuario.getId(), "Entregado");
+
+        model.addAttribute("devoluciones", resumenes);
+        model.addAttribute("pedidosEntregados", pedidosEntregados);
         model.addAttribute("nombre", usuario.getNombre());
 
         return "cliente/devoluciones_cliente";
+    }
+
+    // Devuelve los productos de un pedido entregado, con la cantidad aún disponible para devolver
+    @GetMapping("/devoluciones/productos/{idPedido}")
+    @ResponseBody
+    public List<Map<String, Object>> productosDePedido(@PathVariable Long idPedido) {
+        Usuario usuario = getUsuarioActual();
+
+        Pedido pedido = pedidoRepository.findById(idPedido).orElse(null);
+        if (pedido == null || !pedido.getIdUsuario().equals(usuario.getId())) {
+            return new ArrayList<>();
+        }
+
+        Venta venta = ventaRepository.findByIdPedido(idPedido);
+        if (venta == null) {
+            return new ArrayList<>();
+        }
+
+        List<DetalleVenta> detalles = detalleVentaRepository.findByIdVenta(venta.getId());
+        List<Map<String, Object>> resultado = new ArrayList<>();
+
+        for (DetalleVenta detalle : detalles) {
+            int yaDevuelta = devolucionRepository.findByIdDetalleVenta(detalle.getId()).stream()
+                    .mapToInt(Devolucion::getCantidad)
+                    .sum();
+            int disponible = detalle.getCantidad() - yaDevuelta;
+
+            if (disponible > 0) {
+                Producto producto = productoRepository.findById(detalle.getIdProducto()).orElse(null);
+
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("idProducto", detalle.getIdProducto());
+                item.put("nombre", producto != null ? producto.getNombre() : "Producto eliminado");
+                item.put("cantidadComprada", disponible);
+                resultado.add(item);
+            }
+        }
+
+        return resultado;
+    }
+
+    @PostMapping("/devoluciones/crear")
+    public String crearDevolucion(
+            @RequestParam Long idPedido,
+            @RequestParam Long idProducto,
+            @RequestParam Integer cantidad,
+            @RequestParam String motivo,
+            @RequestParam(required = false) String detalle,
+            RedirectAttributes redirectAttributes) {
+
+        Usuario usuario = getUsuarioActual();
+
+        Pedido pedido = pedidoRepository.findById(idPedido).orElse(null);
+        if (pedido == null || !pedido.getIdUsuario().equals(usuario.getId())) {
+            redirectAttributes.addFlashAttribute("error", "Pedido no válido.");
+            return "redirect:/cliente/devoluciones";
+        }
+
+        Venta venta = ventaRepository.findByIdPedido(idPedido);
+        if (venta == null) {
+            redirectAttributes.addFlashAttribute("error", "Este pedido aún no tiene una venta asociada.");
+            return "redirect:/cliente/devoluciones";
+        }
+
+        DetalleVenta detalleVenta = detalleVentaRepository.findByIdVentaAndIdProducto(venta.getId(), idProducto);
+        if (detalleVenta == null) {
+            redirectAttributes.addFlashAttribute("error", "El producto seleccionado no pertenece a este pedido.");
+            return "redirect:/cliente/devoluciones";
+        }
+
+        int yaDevuelta = devolucionRepository.findByIdDetalleVenta(detalleVenta.getId()).stream()
+                .mapToInt(Devolucion::getCantidad)
+                .sum();
+        int disponible = detalleVenta.getCantidad() - yaDevuelta;
+
+        if (cantidad <= 0 || cantidad > disponible) {
+            redirectAttributes.addFlashAttribute("error",
+                    "La cantidad a devolver supera lo disponible para este producto.");
+            return "redirect:/cliente/devoluciones";
+        }
+
+        String motivoCompleto = (detalle != null && !detalle.isBlank())
+                ? motivo + ": " + detalle.trim()
+                : motivo;
+
+        Devolucion nueva = new Devolucion();
+        nueva.setIdDetalleVenta(detalleVenta.getId());
+        nueva.setCantidad(cantidad);
+        nueva.setMotivo(motivoCompleto);
+        nueva.setFechaDevolucion(LocalDate.now());
+        nueva.setEstado("Pendiente");
+        devolucionRepository.save(nueva);
+
+        redirectAttributes.addFlashAttribute("exito", "Tu solicitud de devolución fue enviada correctamente.");
+        return "redirect:/cliente/devoluciones";
     }
 
     // ==========================================
@@ -229,8 +361,6 @@ public class ClienteController {
 
     @GetMapping("/nosotros")
     public String verNosotros(Model model) {
-        // Se usa para precargar el formulario de contacto con los datos reales
-        // del cliente logueado en vez de dejarlo con datos quemados.
         Usuario usuario = getUsuarioActual();
 
         model.addAttribute("usuario", usuario);
@@ -246,10 +376,6 @@ public class ClienteController {
             @RequestParam String mensaje,
             Model model) {
 
-        // No existe una tabla para mensajes de contacto en la base de datos, así
-        // que por ahora no hay dónde persistir esto. Si quieres guardarlos, crea
-        // una tabla (p. ej. "mensaje_contacto") con su Entity/Repository y aquí
-        // solo llamas al repository para guardar antes de retornar la vista.
         Usuario usuario = getUsuarioActual();
 
         model.addAttribute("usuario", usuario);
@@ -260,8 +386,9 @@ public class ClienteController {
     }
 
     // ==========================================
-    // CLASE AUXILIAR: resumen de pedido para la vista
+    // CLASES AUXILIARES INTERNAS PARA LAS VISTAS
     // ==========================================
+
     public static class PedidoResumen {
         private Long id;
         private LocalDateTime fecha;
@@ -282,5 +409,30 @@ public class ClienteController {
         public String getEstado() { return estado; }
         public Integer getCantidadProductos() { return cantidadProductos; }
         public BigDecimal getTotal() { return total; }
+    }
+
+    public static class DevolucionResumen {
+        private Long id;
+        private String pedidoRef;
+        private String producto;
+        private String motivo;
+        private LocalDate fecha;
+        private String estado;
+
+        public DevolucionResumen(Long id, String pedidoRef, String producto, String motivo, LocalDate fecha, String estado) {
+            this.id = id;
+            this.pedidoRef = pedidoRef;
+            this.producto = producto;
+            this.motivo = motivo;
+            this.fecha = fecha;
+            this.estado = estado;
+        }
+
+        public Long getId() { return id; }
+        public String getPedidoRef() { return pedidoRef; }
+        public String getProducto() { return producto; }
+        public String getMotivo() { return motivo; }
+        public LocalDate getFecha() { return fecha; }
+        public String getEstado() { return estado; }
     }
 }

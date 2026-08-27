@@ -15,7 +15,7 @@ public interface DevolucionRepository extends JpaRepository<Devolucion, Long> {
     List<Devolucion> findByEstado(String estado);
 
     // La tabla devolucion solo tiene id_detalle_venta_fk, no id_usuario_fk directo.
-    // No existe entity DetalleVenta en el proyecto, así que se llega al usuario
+    // No existe entity DetalleVenta relacionada por JPA, así que se llega al usuario
     // con una consulta nativa: devolucion -> detalle_venta -> venta -> usuario.
     @Query(value = "SELECT d.* FROM devolucion d " +
             "JOIN detalle_venta dv ON d.id_detalle_venta_fk = dv.id_detalle_venta " +
@@ -24,4 +24,7 @@ public interface DevolucionRepository extends JpaRepository<Devolucion, Long> {
             "ORDER BY d.fecha_devolucion DESC",
             nativeQuery = true)
     List<Devolucion> findByUsuario(@Param("idUsuario") Long idUsuario);
+
+    // Usado para calcular cuánto de un detalle_venta ya fue devuelto antes
+    List<Devolucion> findByIdDetalleVenta(Long idDetalleVenta);
 }

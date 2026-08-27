@@ -9,4 +9,7 @@ import java.util.List;
 @Repository
 public interface VentaRepository extends JpaRepository<Venta, Long> {
     List<Venta> findAllByOrderByFechaVentaDesc();
+
+    // Usado en devoluciones: encontrar la venta asociada a un pedido
+    Venta findByIdPedido(Long idPedido);
 }

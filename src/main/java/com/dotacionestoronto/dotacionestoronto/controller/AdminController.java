@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,16 +20,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.dotacionestoronto.dotacionestoronto.entity.DetallePedido;
+import com.dotacionestoronto.dotacionestoronto.entity.DetalleVenta;
 import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
 import com.dotacionestoronto.dotacionestoronto.entity.Inventario;
 import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
 import com.dotacionestoronto.dotacionestoronto.entity.Producto;
 import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
+import com.dotacionestoronto.dotacionestoronto.entity.Venta;
+import com.dotacionestoronto.dotacionestoronto.repository.DetallePedidoRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.DetalleVentaRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.DevolucionRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.InventarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.VentaRepository;
 
 @Controller
 @RequestMapping("/admin")
@@ -48,6 +55,15 @@ public class AdminController {
 
     @Autowired
     private InventarioRepository inventarioRepository;
+
+    @Autowired
+    private DetallePedidoRepository detallePedidoRepository;
+
+    @Autowired
+    private VentaRepository ventaRepository;
+
+    @Autowired
+    private DetalleVentaRepository detalleVentaRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -231,10 +247,48 @@ public class AdminController {
     @PostMapping("/pedidos/cambiarEstado")
     public String cambiarEstadoPedido(@RequestParam Long idPedido, @RequestParam String estado) {
         Pedido pedido = pedidoRepository.findById(idPedido).orElse(null);
+
         if (pedido != null) {
+            String estadoAnterior = pedido.getEstado();
+
             pedido.setEstado(estado);
             pedidoRepository.save(pedido);
+
+            // Si el pedido pasa a "Entregado" y aún no tiene una venta registrada,
+            // generamos la Venta y su DetalleVenta a partir del Pedido/DetallePedido.
+            // Esto es lo que permite luego solicitar devoluciones sobre este pedido.
+            boolean pasaAEntregado = "Entregado".equalsIgnoreCase(estado)
+                    && !"Entregado".equalsIgnoreCase(estadoAnterior);
+
+            if (pasaAEntregado) {
+                Venta ventaExistente = ventaRepository.findByIdPedido(idPedido);
+
+                if (ventaExistente == null) {
+                    List<DetallePedido> detallesPedido = detallePedidoRepository.findByIdPedido(idPedido);
+
+                    BigDecimal total = detallesPedido.stream()
+                            .map(d -> d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad())))
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    Venta venta = new Venta();
+                    venta.setIdUsuario(pedido.getIdUsuario());
+                    venta.setFechaVenta(LocalDateTime.now());
+                    venta.setTotalPagado(total.doubleValue());
+                    venta.setIdPedido(idPedido);
+                    venta = ventaRepository.save(venta);
+
+                    for (DetallePedido dp : detallesPedido) {
+                        DetalleVenta dv = new DetalleVenta();
+                        dv.setIdVenta(venta.getId());
+                        dv.setIdProducto(dp.getIdProducto());
+                        dv.setCantidad(dp.getCantidad());
+                        dv.setPrecioUnitario(dp.getPrecioUnitario());
+                        detalleVentaRepository.save(dv);
+                    }
+                }
+            }
         }
+
         return "redirect:/admin/pedidos";
     }
 

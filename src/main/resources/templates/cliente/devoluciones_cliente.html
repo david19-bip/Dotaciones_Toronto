@@ -1,150 +1,183 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/springsecurity6">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Devoluciones - Dotaciones Toronto</title>
+    <!-- Estilos Externos -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link th:href="@{/css/cliente.css}" rel="stylesheet">
 </head>
 <body>
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="sidebar-brand" style="text-align: center; padding: 15px 0;">
-            <img th:src="@{/images/logo blanco.png}"
-                 alt="Logo Dotaciones Toronto"
-                 style="width: 140px; height: 140px; object-fit: contain; display: block; margin: 0 auto 5px;">
-            <div style="color: #fa813b; font-weight: 700; font-size: 0.9rem;">Dotaciones Toronto</div>
+    <!-- Sidebar Navegación -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img th:src="@{/images/logo blanco.png}" alt="Logo Dotaciones Toronto" class="brand-logo">
+            <div class="brand-title">DOTACIONES TORONTO</div>
         </div>
-        <a href="/cliente/panel"><i class="bi bi-house"></i> Inicio</a>
-        <a href="/cliente/perfil"><i class="bi bi-person"></i> Perfil</a>
-        <a href="/cliente/productos"><i class="bi bi-bag"></i> Productos</a>
-        <a href="/cliente/pedidos"><i class="bi bi-receipt"></i> Pedidos</a>
-        <a href="/cliente/devoluciones" class="active"><i class="bi bi-arrow-return-left"></i> Devoluciones</a>
-        <a href="/cliente/nosotros"><i class="bi bi-info-circle"></i> Nosotros</a>
-        <form th:action="@{/logout}" method="post" style="padding: 10px 20px; margin-top: 10px;">
-            <button type="submit" style="background:none; border:none; color:#f87171; cursor:pointer; font-size:0.9rem; padding:0;">
+
+        <nav class="sidebar-nav">
+            <a href="/cliente/panel"><i class="bi bi-grid-1x2-fill"></i> Inicio</a>
+            <a href="/cliente/perfil"><i class="bi bi-person-bounding-box"></i> Perfil</a>
+            <a href="/cliente/productos"><i class="bi bi-bag-check-fill"></i> Productos</a>
+            <a href="/cliente/pedidos"><i class="bi bi-receipt-cutoff"></i> Pedidos</a>
+            <a href="/cliente/devoluciones" class="active"><i class="bi bi-arrow-counterclockwise"></i> Devoluciones</a>
+            <a href="/cliente/nosotros"><i class="bi bi-info-circle-fill"></i> Nosotros</a>
+        </nav>
+
+        <form th:action="@{/logout}" method="post" class="mt-auto">
+            <button type="submit" class="logout-btn">
                 <i class="bi bi-box-arrow-right"></i> Cerrar sesión
             </button>
         </form>
-    </div>
+    </aside>
 
-    <!-- Contenido principal -->
-    <div class="main-content">
+    <!-- Contenido Principal -->
+    <main class="main-content">
+        <!-- Cabecera de Página -->
         <div class="d-flex justify-content-between align-items-center mb-1">
             <h4 class="fw-bold mb-0">Mis devoluciones</h4>
-            <button class="btn btn-toronto btn-sm" data-bs-toggle="modal" data-bs-target="#modalDevolucion"
+            <button class="btn btn-toronto btn-sm d-flex align-items-center gap-2" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#modalDevolucion"
                     th:disabled="${#lists.isEmpty(pedidosEntregados)}">
                 <i class="bi bi-plus-lg"></i> Solicitar devolución
             </button>
         </div>
         <p class="text-muted mb-4">Historial y estado de tus solicitudes de devolución</p>
 
-        <div th:if="${exito}" class="alert alert-success p-2 fs-6" th:text="${exito}"></div>
-        <div th:if="${error}" class="alert alert-danger p-2 fs-6" th:text="${error}"></div>
-        <div th:if="${#lists.isEmpty(pedidosEntregados)}" class="alert alert-warning p-2 fs-6">
-            Solo puedes solicitar una devolución sobre pedidos que ya te fueron entregados. Aún no tienes ninguno.
+        <!-- Mensajes de Alerta / Notificaciones -->
+        <div th:if="${exito}" class="alert alert-success alert-dismissible fade show p-3 mb-3" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <span th:text="${exito}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
-        <div class="card-stat p-3">
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show p-3 mb-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div th:if="${#lists.isEmpty(pedidosEntregados)}" class="alert alert-warning p-3 mb-4 rounded-3 d-flex align-items-center gap-2">
+            <i class="bi bi-info-circle-fill fs-5"></i>
+            <div>Solo puedes solicitar una devolución sobre pedidos que ya te fueron entregados. Aún no tienes ninguno.</div>
+        </div>
+
+        <!-- Tabla de Devoluciones -->
+        <div class="card-stat p-0 overflow-hidden">
             <div class="table-responsive">
                 <table class="table align-middle mb-0">
-                    <thead>
-                        <tr class="text-muted" style="font-size:0.85rem;">
-                            <th>Solicitud</th>
+                    <thead class="table-light">
+                        <tr class="text-muted small text-uppercase">
+                            <th class="ps-4">Solicitud</th>
                             <th>Pedido asociado</th>
                             <th>Producto</th>
                             <th>Motivo</th>
                             <th>Fecha</th>
-                            <th>Estado</th>
+                            <th class="pe-4">Estado</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr th:each="dev : ${devoluciones}">
-                            <td class="fw-semibold" th:text="'DEV-' + ${dev.id}"></td>
+                            <td class="ps-4 fw-semibold text-dark" th:text="'DEV-' + ${dev.id}"></td>
                             <td th:text="${dev.pedidoRef}"></td>
                             <td th:text="${dev.producto}"></td>
                             <td th:text="${dev.motivo}"></td>
                             <td th:text="${#temporals.format(dev.fecha, 'dd/MM/yyyy')}"></td>
-                            <td>
+                            <td class="pe-4">
                                 <span class="badge-estado"
                                       th:classappend="${dev.estado == 'Pendiente' ? 'badge-pendiente' : (dev.estado == 'Aprobada' ? 'badge-entregado' : (dev.estado == 'En revisión' ? 'badge-proceso' : 'badge-cancelado'))}"
                                       th:text="${dev.estado}"></span>
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(devoluciones)}">
-                            <td colspan="6" class="text-center text-muted py-4">Aún no has solicitado devoluciones.</td>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                                Aún no has solicitado devoluciones.
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Modal solicitar devolución -->
-        <div class="modal fade" id="modalDevolucion" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
+        <!-- Modal Solicitar Devolución -->
+        <div class="modal fade" id="modalDevolucion" tabindex="-1" aria-labelledby="modalDevolucionLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
                     <form th:action="@{/cliente/devoluciones/crear}" method="post">
-                        <div class="modal-header">
-                            <h5 class="modal-title fw-bold">Solicitar devolución</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        
+                        <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                            <h5 class="modal-title fw-bold" id="modalDevolucionLabel">Solicitar devolución</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <div class="modal-body">
+
+                        <div class="modal-body p-4">
                             <div class="mb-3">
-                                <label class="form-label small fw-semibold">Pedido</label>
-                                <select class="form-select" name="idPedido" id="selectPedido" required onchange="cargarProductosPedido()">
+                                <label for="selectPedido" class="form-label small fw-semibold text-dark">Pedido</label>
+                                <select class="form-select form-select-lg fs-6" name="idPedido" id="selectPedido" required onchange="cargarProductosPedido()">
                                     <option value="" selected disabled>Selecciona un pedido entregado</option>
                                     <option th:each="pedido : ${pedidosEntregados}"
                                             th:value="${pedido.id}"
                                             th:text="'PED-' + ${pedido.id} + ' - ' + ${#temporals.format(pedido.fechaPedido, 'dd/MM/yyyy')}"></option>
                                 </select>
                             </div>
+
                             <div class="mb-3">
-                                <label class="form-label small fw-semibold">Producto</label>
-                                <select class="form-select" name="idProducto" id="selectProducto" required disabled>
+                                <label for="selectProducto" class="form-label small fw-semibold text-dark">Producto</label>
+                                <select class="form-select form-select-lg fs-6" name="idProducto" id="selectProducto" required disabled>
                                     <option value="" selected>Primero elige un pedido</option>
                                 </select>
                             </div>
+
                             <div class="mb-3">
-                                <label class="form-label small fw-semibold">Cantidad a devolver</label>
-                                <input type="number" class="form-control" name="cantidad" id="inputCantidad" min="1" value="1" required>
+                                <label for="inputCantidad" class="form-label small fw-semibold text-dark">Cantidad a devolver</label>
+                                <input type="number" class="form-control form-control-lg fs-6" name="cantidad" id="inputCantidad" min="1" value="1" required>
                             </div>
+
                             <div class="mb-3">
-                                <label class="form-label small fw-semibold">Motivo</label>
-                                <select class="form-select" name="motivo" required>
+                                <label class="form-label small fw-semibold text-dark">Motivo</label>
+                                <select class="form-select form-select-lg fs-6" name="motivo" required>
                                     <option value="Talla incorrecta">Talla incorrecta</option>
                                     <option value="Producto defectuoso">Producto defectuoso</option>
                                     <option value="No era lo que pedí">No era lo que pedí</option>
                                     <option value="Otro">Otro</option>
                                 </select>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-semibold">Detalle</label>
+
+                            <div class="mb-0">
+                                <label class="form-label small fw-semibold text-dark">Detalle</label>
                                 <textarea class="form-control" name="detalle" rows="3" placeholder="Cuéntanos qué pasó..."></textarea>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-toronto">Enviar solicitud</button>
+
+                        <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
+                            <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-toronto rounded-3 px-4">Enviar solicitud</button>
                         </div>
+
                     </form>
                 </div>
             </div>
         </div>
+    </main>
 
-    </div>
-
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         async function cargarProductosPedido() {
             const idPedido = document.getElementById('selectPedido').value;
             const selectProducto = document.getElementById('selectProducto');
             const inputCantidad = document.getElementById('inputCantidad');
+            const btnEnviar = document.querySelector('#modalDevolucion button[type="submit"]');
 
             selectProducto.innerHTML = '<option value="">Cargando...</option>';
             selectProducto.disabled = true;
+            btnEnviar.disabled = true;
 
             try {
                 const resp = await fetch('/cliente/devoluciones/productos/' + idPedido);
@@ -152,6 +185,7 @@
 
                 if (!productos.length) {
                     selectProducto.innerHTML = '<option value="">Sin productos disponibles</option>';
+                    btnEnviar.disabled = true;
                     return;
                 }
 
@@ -159,6 +193,7 @@
                     `<option value="${p.idProducto}" data-max="${p.cantidadComprada}">${p.nombre} (comprados: ${p.cantidadComprada})</option>`
                 ).join('');
                 selectProducto.disabled = false;
+                btnEnviar.disabled = false;
 
                 selectProducto.onchange = () => {
                     const opcion = selectProducto.selectedOptions[0];
@@ -169,6 +204,7 @@
                 selectProducto.onchange();
             } catch (e) {
                 selectProducto.innerHTML = '<option value="">Error al cargar productos</option>';
+                btnEnviar.disabled = true;
             }
         }
     </script>
