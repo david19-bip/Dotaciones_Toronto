@@ -88,7 +88,7 @@
                                 <td class="p-3 ps-4 fw-bold text-secondary" th:text="${'#' + producto.id}"></td>
                                 <td class="p-3">
                                     <img th:if="${producto.imagen != null}"
-                                         th:src="@{'/' + producto.imagen}"
+                                         th:src="@{'/' + ${producto.imagen}}"
                                          style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px;">
                                     <span th:unless="${producto.imagen != null}" class="text-muted small">Sin imagen</span>
                                 </td>
