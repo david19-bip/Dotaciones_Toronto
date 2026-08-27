@@ -49,11 +49,6 @@ public class UsuarioController {
             return "registro";
         }
 
-        if (password.length() < 6) {
-            model.addAttribute("error", "La contraseña debe tener al menos 6 caracteres.");
-            return "registro";
-        }
-
         if (usuarioRepository.findByCorreo(correo) != null) {
             model.addAttribute("error", "Ya existe un usuario con ese correo.");
             return "registro";

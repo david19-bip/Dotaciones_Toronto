@@ -131,6 +131,50 @@ public class AdminController {
         return "redirect:/admin/usuarios";
     }
 
+    // --- NUEVO: Mostrar formulario de edición ---
+    @GetMapping("/usuarios/editar")
+    public String editarUsuarioForm(@RequestParam("id") Long id, Model model) {
+        Usuario usuario = usuarioRepository.findById(id).orElse(null);
+        if (usuario == null) {
+            return "redirect:/admin/usuarios";
+        }
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("nombre", getUsuarioActual().getNombre());
+        return "admin/editar_usuario_admin";
+    }
+
+    // --- NUEVO: Procesar actualización de usuario ---
+    @PostMapping("/usuarios/actualizar")
+    public String actualizarUsuario(
+            @RequestParam Long idUsuario,
+            @RequestParam String nombre,
+            @RequestParam String documento,
+            @RequestParam String correo,
+            @RequestParam String telefono,
+            @RequestParam String direccion,
+            @RequestParam(required = false) String password,
+            @RequestParam Integer rol) {
+
+        Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
+        if (usuario != null) {
+            usuario.setNombre(nombre);
+            usuario.setDocumento(documento);
+            usuario.setCorreo(correo);
+            usuario.setTelefono(telefono);
+            usuario.setDireccion(direccion);
+            usuario.setIdRol(rol);
+
+            // Si se ingresó una nueva contraseña, la encripta y actualiza
+            if (password != null && !password.trim().isEmpty()) {
+                usuario.setContrasena(passwordEncoder.encode(password));
+            }
+
+            usuarioRepository.save(usuario);
+        }
+
+        return "redirect:/admin/usuarios";
+    }
+
     @PostMapping("/usuarios/toggleEstado")
     public String toggleEstadoUsuario(@RequestParam Long idUsuario) {
         Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
