@@ -1,0 +1,96 @@
+/* =====================================================
+   TEMA VERDE - BODEGUERO
+   Este archivo se carga DESPUÉS de admin.css y solo
+   sobrescribe colores/acentos, no duplica la estructura.
+   ===================================================== */
+
+/* ===== FONDO GENERAL DIFUMINADO EN VERDE ===== */
+body {
+    background-color: #f0fdf4;
+    background-image:
+        radial-gradient(circle at 15% 20%, rgba(134, 239, 172, 0.55), transparent 55%),
+        radial-gradient(circle at 85% 15%, rgba(74, 222, 128, 0.35), transparent 50%),
+        radial-gradient(circle at 50% 90%, rgba(22, 163, 74, 0.25), transparent 60%),
+        linear-gradient(160deg, #ecfdf5 0%, #d1fae5 50%, #bbf7d0 100%);
+    background-attachment: fixed;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+/* ===== SIDEBAR EN TONOS VERDES ===== */
+.sidebar {
+    background: linear-gradient(180deg, #0b2e1d 0%, #14432b 50%, #1c5c3a 100%);
+}
+
+.sidebar-brand {
+    color: #4ade80;
+    border-bottom: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.sidebar a {
+    color: #a7d9bb;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+    background-color: rgba(74, 222, 128, 0.12);
+    color: #4ade80;
+    border-left: 3px solid #4ade80;
+}
+
+/* Empuja el botón de Cerrar sesión hasta el fondo del sidebar */
+.sidebar form {
+    margin-top: auto;
+    padding: 10px 20px 20px;
+}
+
+/* ===== BOTONES EN TONOS VERDES ===== */
+.btn-primary {
+    background-color: #16a34a !important;
+    border-color: #16a34a !important;
+    color: #ffffff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: #15803d !important;
+    border-color: #15803d !important;
+}
+
+.btn-success {
+    background-color: #22c55e !important;
+    border-color: #22c55e !important;
+}
+
+.btn-success:hover,
+.btn-success:focus {
+    background-color: #16a34a !important;
+    border-color: #16a34a !important;
+}
+
+.btn-admin {
+    background-color: #16a34a;
+}
+
+.btn-admin:hover {
+    background-color: #15803d;
+}
+
+/* ===== ÍCONOS Y TEXTOS DE ACENTO (tarjetas de resumen) ===== */
+.text-primary {
+    color: #16a34a !important;
+}
+
+.bg-primary {
+    background-color: rgba(22, 163, 74, var(--bs-bg-opacity, 1)) !important;
+}
+
+/* Nota: dejamos bg-danger / text-danger sin cambios en la tarjeta
+   de "Stock Bajo" para que la alerta siga siendo visualmente distinta */
+
+/* ===== FOCO DE FORMULARIOS EN VERDE ===== */
+.form-control:focus,
+.form-select:focus {
+    border-color: #4ade80;
+    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.15);
+}
