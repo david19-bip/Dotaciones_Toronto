@@ -17,8 +17,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import java.nio.file.Path;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 @Controller
@@ -124,24 +129,33 @@ public class AdminController {
         return "admin/productos_admin";
     }
 
-    @PostMapping("/productos/crear")
-    public String crearProducto(
-            @RequestParam String nombre,
-            @RequestParam BigDecimal precio,
-            @RequestParam String talla,
-            @RequestParam String color) {
+@PostMapping("/productos/crear")
+public String crearProducto(
+        @RequestParam String nombre,
+        @RequestParam BigDecimal precio,
+        @RequestParam String talla,
+        @RequestParam String color,
+        @RequestParam(required = false) MultipartFile imagen) throws IOException {
 
-        Producto producto = new Producto();
-        producto.setNombre(nombre);
-        producto.setPrecio(precio);
-        producto.setTalla(talla);
-        producto.setColor(color);
-        producto.setEstado("Disponible");
-        producto.setInhabilitado(false);
-        productoRepository.save(producto);
+    Producto producto = new Producto();
+    producto.setNombre(nombre);
+    producto.setPrecio(precio);
+    producto.setTalla(talla);
+    producto.setColor(color);
+    producto.setEstado("Disponible");
+    producto.setInhabilitado(false);
 
-        return "redirect:/admin/productos";
+    if (imagen != null && !imagen.isEmpty()) {
+        String nombreArchivo = System.currentTimeMillis() + "_" + imagen.getOriginalFilename();
+        Path ruta = Paths.get("src/main/resources/static/images/productos/" + nombreArchivo);
+        Files.createDirectories(ruta.getParent());
+        Files.write(ruta, imagen.getBytes());
+        producto.setImagen("images/productos/" + nombreArchivo);
     }
+
+    productoRepository.save(producto);
+    return "redirect:/admin/productos";
+}
 
     @PostMapping("/productos/toggleEstado")
     public String toggleEstadoProducto(@RequestParam Long idProducto) {
