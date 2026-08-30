@@ -20,14 +20,16 @@
                  style="width: 140px; height: 140px; object-fit: contain; display: block; margin: 0 auto 5px;">
             <div style="color: #fa813b; font-weight: 700; font-size: 0.9rem;">Dotaciones Toronto</div>
         </div>
-        <a href="/cliente/panel"><i class="bi bi-house"></i> Inicio</a>
-        <a href="/cliente/perfil"><i class="bi bi-person"></i> Perfil</a>
-        <a href="/cliente/productos"><i class="bi bi-bag"></i> Productos</a>
-        <a href="/cliente/pedidos" class="active"><i class="bi bi-receipt"></i> Pedidos</a>
-        <a href="/cliente/devoluciones"><i class="bi bi-arrow-return-left"></i> Devoluciones</a>
-        <a href="/cliente/nosotros"><i class="bi bi-info-circle"></i> Nosotros</a>
-        <form th:action="@{/logout}" method="post" style="padding: 10px 20px; margin-top: 10px;">
-            <button type="submit" style="background:none; border:none; color:#f87171; cursor:pointer; font-size:0.9rem; padding:0;">
+        <nav class="sidebar-nav">
+            <a href="/cliente/panel" ><i class="bi bi-grid-1x2-fill"></i> Inicio</a>
+            <a href="/cliente/perfil"><i class="bi bi-person-bounding-box"></i> Perfil</a>
+            <a href="/cliente/productos"><i class="bi bi-bag-check-fill"></i> Productos</a>
+            <a href="/cliente/pedidos "class="active"><i class="bi bi-receipt-cutoff"></i> Pedidos</a>
+            <a href="/cliente/devoluciones"><i class="bi bi-arrow-counterclockwise"></i> Devoluciones</a>
+            <a href="/cliente/nosotros"><i class="bi bi-info-circle-fill"></i> Nosotros</a>
+        </nav>
+        <form th:action="@{/logout}" method="post" class="mt-auto">
+            <button type="submit" class="logout-btn">
                 <i class="bi bi-box-arrow-right"></i> Cerrar sesión
             </button>
         </form>
