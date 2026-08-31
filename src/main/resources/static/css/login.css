@@ -4,183 +4,188 @@
    ========================================== */
 
 :root {
-    --bg: #F2F5F3;
-    --ink: #16213A;
-    --ink-soft: #4A5568;
-    --orange: #FA813B;
-    --orange-deep: #E06A28;
-    --line: #D7DDD9;
-    --white: #FFFFFF;
+  --bg: #f2f5f3;
+  --ink: #16213a;
+  --ink-soft: #4a5568;
+  --orange: #fa813b;
+  --orange-deep: #e06a28;
+  --line: #d7ddd9;
+  --white: #ffffff;
 
-    --font-display: 'Big Shoulders Display', sans-serif;
-    --font-body: 'Inter', system-ui, sans-serif;
+  --font-display: "Big Shoulders Display", sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
 }
 
 /* ===== ESTRUCTURA GENERAL ===== */
 body {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: url('/images/fondo login.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    font-family: var(--font-body);
-    color: var(--ink);
-    -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: url("/images/fondo login.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  font-family: var(--font-body);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4 {
-    font-family: var(--font-display);
-    font-weight: 800;
-    letter-spacing: 0.2px;
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.2px;
 }
 
 /* ===== NAVBAR (mismo estilo que la landing) ===== */
 .navbar-dt {
-    background: rgba(242, 245, 243, 0.92);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--line);
-    position: sticky;
-    top: 0;
-    z-index: 100;
+  background: rgba(242, 245, 243, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 .navbar-dt .container {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 76px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 76px;
 }
 .navbar-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 1.3rem;
-    color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.3rem;
+  color: var(--ink);
 }
 .navbar-brand img {
-    width: 32px;
-    height: 32px;
-    object-fit: contain;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 .navbar-brand i {
-    color: var(--orange);
-    font-size: 1.4rem;
+  color: var(--orange);
+  font-size: 1.4rem;
 }
 .navbar-brand span {
-    color: var(--ink);
-    font-weight: 800;
+  color: var(--ink);
+  font-weight: 800;
 }
 .navbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 .btn-ghost {
-    font-weight: 600;
-    font-size: 0.92rem;
-    color: var(--ink);
-    padding: 10px 6px;
-    text-decoration: none;
-    background: transparent;
-    border: none;
-    transition: color 0.15s;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--ink);
+  padding: 10px 6px;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  transition: color 0.15s;
 }
 .btn-ghost:hover {
-    color: var(--orange-deep);
+  color: var(--orange-deep);
 }
 .btn-primary-dt {
-    background: var(--orange);
-    border: none;
-    color: var(--white);
-    font-weight: 700;
-    font-size: 0.92rem;
-    padding: 11px 20px;
-    border-radius: 8px;
-    text-decoration: none;
-    transition: background 0.15s;
+  background: var(--orange);
+  border: none;
+  color: var(--white);
+  font-weight: 700;
+  font-size: 0.92rem;
+  padding: 11px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.15s;
 }
 .btn-primary-dt:hover {
-    background: var(--orange-deep);
-    color: var(--white);
+  background: var(--orange-deep);
+  color: var(--white);
 }
 
 /* ===== CONTENIDO Y TARJETA ===== */
 .page-content {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 16px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
 }
 .login-card {
-    background: rgba(255, 255, 255, 0.96);
-    border-radius: 16px;
-    border: 1px solid var(--line);
-    box-shadow: 0 10px 25px -5px rgba(22, 33, 58, 0.1), 0 8px 10px -6px rgba(22, 33, 58, 0.05);
-    padding: 40px 36px;
-    width: 100%;
-    max-width: 420px;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  box-shadow:
+    0 10px 25px -5px rgba(22, 33, 58, 0.1),
+    0 8px 10px -6px rgba(22, 33, 58, 0.05);
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 420px;
 }
 .login-icon {
-    font-size: 3rem;
-    color: var(--orange);
+  font-size: 3rem;
+  color: var(--orange);
 }
 .login-title {
-    font-family: var(--font-display);
-    font-size: 1.7rem;
-    font-weight: 800;
-    color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--ink);
 }
 .login-subtitle {
-    color: var(--ink-soft);
-    font-size: 0.9rem;
-    margin-bottom: 24px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  margin-bottom: 24px;
 }
 
 /* ===== FORMULARIO ===== */
 .form-control {
-    border-radius: 8px;
-    padding: 10px 14px;
-    border: 1.5px solid var(--line);
-    background-color: var(--white);
-    color: var(--ink);
+  border-radius: 8px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--line);
+  background-color: var(--white);
+  color: var(--ink);
 }
 .form-control:focus {
-    border-color: var(--orange);
-    box-shadow: 0 0 0 3px rgba(250, 129, 59, 0.15);
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(250, 129, 59, 0.15);
 }
 .btn-login {
-    background-color: var(--orange);
-    border-color: var(--orange-deep);
-    color: var(--white);
-    border-radius: 8px;
-    padding: 11px;
-    font-weight: 700;
-    font-size: 1rem;
-    transition: all 0.2s;
+  background-color: var(--orange);
+  border-color: var(--orange-deep);
+  color: var(--white);
+  border-radius: 8px;
+  padding: 11px;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: all 0.2s;
 }
 .btn-login:hover {
-    background-color: var(--orange-deep);
-    border-color: var(--orange-deep);
-    color: var(--white);
+  background-color: var(--orange-deep);
+  border-color: var(--orange-deep);
+  color: var(--white);
 }
 
 /* ===== ENLACES Y PIE DE PÁGINA ===== */
 .login-card a.text-secondary {
-    color: var(--ink-soft) !important;
-    transition: color 0.2s;
+  color: var(--ink-soft) !important;
+  transition: color 0.2s;
 }
 .login-card a.text-secondary:hover {
-    color: var(--orange-deep) !important;
+  color: var(--orange-deep) !important;
 }
 .footer-text {
-    color: #a0aec0;
-    font-size: 0.8rem;
+  color: #a0aec0;
+  font-size: 0.8rem;
 }
