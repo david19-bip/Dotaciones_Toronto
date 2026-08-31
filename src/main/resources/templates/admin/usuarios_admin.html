@@ -9,6 +9,20 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Estilo unificado del Admin -->
     <link th:href="@{/css/admin.css}" rel="stylesheet">
+    <style>
+        .btn-reporte {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+            color: #e2b96f;
+            border: 1px solid rgba(226, 185, 111, 0.5);
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-reporte:hover {
+            color: #1a1a2e;
+            background: #e2b96f;
+            border-color: #e2b96f;
+        }
+    </style>
 </head>
 <body>
 
@@ -51,9 +65,14 @@
                 <h3 class="fw-bold text-dark mb-1">Gestión de Usuarios</h3>
                 <p class="text-muted mb-0">Administra y registra las cuentas activas del sistema</p>
             </div>
-            <button class="btn btn-admin shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCrearUsuario">
-                <i class="bi bi-person-plus me-1"></i> Nuevo Usuario
-            </button>
+            <div class="d-flex gap-2">
+                <a th:href="@{/admin/usuarios/reporte}" target="_blank" class="btn btn-reporte shadow-sm">
+                    <i class="bi bi-file-earmark-pdf-fill me-1"></i> Reporte PDF
+                </a>
+                <button class="btn btn-admin shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCrearUsuario">
+                    <i class="bi bi-person-plus me-1"></i> Nuevo Usuario
+                </button>
+            </div>
         </div>
 
         <!-- Alertas -->
