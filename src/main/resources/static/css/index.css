@@ -339,7 +339,24 @@ p { margin: 0; }
     position: relative;
 }
 
-.rack-rod {
+/* .rack-row ahora se ajusta a su propio contenido y se centra;
+   el riel (::before) nace de las tarjetas, no del contenedor completo,
+   así que siempre mide exactamente lo que ocupan las tarjetas. */
+.rack-row {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 28px 24px 12px;
+}
+
+.rack-row::before {
+    content: "";
     position: absolute;
     top: 22px;
     left: 24px;
@@ -347,20 +364,12 @@ p { margin: 0; }
     height: 4px;
     background: var(--ink);
     opacity: 0.85;
-}
-
-.rack-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 20px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 28px 24px 12px;
-    scrollbar-width: thin;
+    z-index: 0;
 }
 
 .hang-card {
     position: relative;
+    z-index: 1;
     flex: 0 0 200px;
     background: var(--white);
     border: 1px solid var(--line);
