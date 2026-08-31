@@ -48,6 +48,20 @@
         <div th:if="${exito}" class="alert alert-success" th:text="${exito}"></div>
         <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
+        <!-- Buscador y filtros -->
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <div class="input-group" style="max-width: 320px;">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input type="text" id="buscadorInventario" class="form-control"
+                       placeholder="Buscar producto..." onkeyup="filtrarInventario()">
+            </div>
+            <select id="filtroEstado" class="form-select" style="max-width: 200px;" onchange="filtrarInventario()">
+                <option value="todos">Todos los estados</option>
+                <option value="normal">Normal</option>
+                <option value="bajo">Stock bajo</option>
+            </select>
+        </div>
+
         <!-- Tabla de inventario -->
         <div class="card border-0 shadow-sm rounded-3">
             <div class="card-body p-0">
@@ -62,13 +76,15 @@
                             <th class="p-3">Actualizar</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr th:if="${#lists.isEmpty(inventarios)}">
+                    <tbody id="tablaInventarioBody">
+                        <tr th:if="${#lists.isEmpty(inventarios)}" class="fila-vacia">
                             <td colspan="6" class="text-center p-4 text-muted">No hay registros de inventario</td>
                         </tr>
-                        <tr th:each="inv : ${inventarios}">
+                        <tr th:each="inv : ${inventarios}"
+                            th:with="prod=${productos.?[id == #inv.idProducto]}">
                             <td class="p-3 fw-bold" th:text="${inv.id}"></td>
-                            <td class="p-3" th:text="${inv.idProducto}"></td>
+                            <td class="p-3 col-producto"
+                                th:text="${#lists.isEmpty(prod) ? ('#' + inv.idProducto) : (prod[0].nombre + ' - ' + prod[0].talla + ' - ' + prod[0].color)}"></td>
                             <td class="p-3" th:text="${inv.cantidadActual}"></td>
                             <td class="p-3" th:text="${inv.stockMinimo}"></td>
                             <td class="p-3">
@@ -86,6 +102,9 @@
                                     </button>
                                 </form>
                             </td>
+                        </tr>
+                        <tr id="sinResultados" style="display:none;">
+                            <td colspan="6" class="text-center p-4 text-muted">No se encontraron productos con esos filtros.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -133,5 +152,35 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function filtrarInventario() {
+            const query = document.getElementById('buscadorInventario').value.trim().toLowerCase();
+            const estadoFiltro = document.getElementById('filtroEstado').value;
+            const filas = document.querySelectorAll('#tablaInventarioBody tr:not(.fila-vacia):not(#sinResultados)');
+
+            let visibles = 0;
+
+            filas.forEach(fila => {
+                const producto = (fila.querySelector('.col-producto')?.textContent || '').toLowerCase();
+                const badge = fila.querySelector('.badge');
+                const estadoTexto = badge ? badge.textContent.trim().toLowerCase() : '';
+
+                const coincideTexto = producto.includes(query);
+                const coincideEstado =
+                    estadoFiltro === 'todos' ||
+                    (estadoFiltro === 'normal' && estadoTexto === 'normal') ||
+                    (estadoFiltro === 'bajo' && estadoTexto === 'stock bajo');
+
+                const visible = coincideTexto && coincideEstado;
+                fila.style.display = visible ? '' : 'none';
+                if (visible) visibles++;
+            });
+
+            const sinResultados = document.getElementById('sinResultados');
+            if (sinResultados) {
+                sinResultados.style.display = (filas.length > 0 && visibles === 0) ? '' : 'none';
+            }
+        }
+    </script>
 </body>
 </html>
