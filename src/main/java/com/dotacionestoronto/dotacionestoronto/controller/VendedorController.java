@@ -152,28 +152,23 @@ public class VendedorController {
 
     @PostMapping("/perfil/actualizar")
     public String actualizarPerfil(
-            @RequestParam String nombre,
-            @RequestParam String correo,
-            @RequestParam String telefono,
-            @RequestParam String direccion,
+            @RequestParam(required = false) String correo,
+            @RequestParam(required = false) String telefono,
+            @RequestParam(required = false) String direccion,
             @RequestParam(required = false) String password,
             Model model) {
 
         Usuario usuario = getUsuarioActual();
 
-        if (!nombre.isEmpty()) {
-            usuario.setNombre(nombre);
-        }
-
-        if (!correo.isEmpty()) {
+        if (correo != null && !correo.isEmpty()) {
             usuario.setCorreo(correo);
         }
 
-        if (!telefono.isEmpty()) {
+        if (telefono != null && !telefono.isEmpty()) {
             usuario.setTelefono(telefono);
         }
 
-        if (!direccion.isEmpty()) {
+        if (direccion != null && !direccion.isEmpty()) {
             usuario.setDireccion(direccion);
         }
 
