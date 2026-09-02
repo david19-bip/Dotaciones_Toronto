@@ -1,7 +1,13 @@
 package com.dotacionestoronto.dotacionestoronto.entity;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "producto")
@@ -56,4 +62,8 @@ public class Producto {
 
     public Boolean getInhabilitado() { return inhabilitado; }
     public void setInhabilitado(Boolean inhabilitado) { this.inhabilitado = inhabilitado; }
+
+    private String categoria;
+    public String getCategoria() { return categoria; }
+    public void setCategoria(String categoria) { this.categoria = categoria; }
 }
