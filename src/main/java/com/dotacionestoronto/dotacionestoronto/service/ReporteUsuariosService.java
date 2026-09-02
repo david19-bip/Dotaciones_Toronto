@@ -2,6 +2,8 @@ package com.dotacionestoronto.dotacionestoronto.service;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -13,6 +15,7 @@ import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
+import com.lowagie.text.Image;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
@@ -46,6 +49,14 @@ public class ReporteUsuariosService {
     private static final Color ESTADO_OK   = new Color(0x19, 0x87, 0x54);
     private static final Color ESTADO_OFF  = new Color(0x6C, 0x75, 0x7D);
 
+    // Se prueban varias rutas típicas por si el archivo tiene espacio o guion bajo
+    private static final String[] RUTAS_LOGO = {
+            "/static/images/logo blanco.png",
+            "/static/images/logo_blanco.png",
+            "/images/logo blanco.png",
+            "/images/logo_blanco.png"
+    };
+
     private final Font fSerifTituloGrande = new Font(Font.HELVETICA, 22, Font.BOLD, DORADO);
     private final Font fSubtitulo = new Font(Font.HELVETICA, 10, Font.NORMAL, new Color(0xCB, 0xD5, 0xE0));
     private final Font fEtiquetaBlanca = new Font(Font.HELVETICA, 8, Font.NORMAL, new Color(0xB8, 0xC2, 0xD6));
@@ -78,16 +89,31 @@ public class ReporteUsuariosService {
     }
 
     // ==========================================
-    // ENCABEZADO — banda navy con degradado y franja dorada
+    // ENCABEZADO — logo + banda navy con degradado y franja dorada
     // ==========================================
     private void agregarEncabezado(Document documento, int totalUsuarios) throws DocumentException {
-        PdfPTable banda = new PdfPTable(2);
+        PdfPTable banda = new PdfPTable(3);
         banda.setWidthPercentage(100);
         try {
-            banda.setWidths(new float[]{3f, 1f});
+            banda.setWidths(new float[]{1f, 2.3f, 1f});
         } catch (DocumentException ignored) { }
         banda.getDefaultCell().setBorder(Rectangle.NO_BORDER);
 
+        // Celda del logo
+        PdfPCell celdaLogo = new PdfPCell();
+        celdaLogo.setBorder(Rectangle.NO_BORDER);
+        celdaLogo.setBackgroundColor(NAVY_OSCURO);
+        celdaLogo.setPadding(10);
+        celdaLogo.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        celdaLogo.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+        Image logo = cargarLogo();
+        if (logo != null) {
+            logo.scaleToFit(95, 95);
+            celdaLogo.addElement(logo);
+        }
+
+        // Celda del título
         PdfPCell celdaTitulo = new PdfPCell();
         celdaTitulo.setBorder(Rectangle.NO_BORDER);
         celdaTitulo.setBackgroundColor(NAVY_OSCURO);
@@ -123,6 +149,7 @@ public class ReporteUsuariosService {
         celdaContador.addElement(numGrande);
         celdaContador.addElement(etiquetaNum);
 
+        banda.addCell(celdaLogo);
         banda.addCell(celdaTitulo);
         banda.addCell(celdaContador);
         documento.add(banda);
@@ -140,6 +167,25 @@ public class ReporteUsuariosService {
         Paragraph espacio = new Paragraph(" ");
         espacio.setSpacingAfter(14);
         documento.add(espacio);
+    }
+
+    /**
+     * Carga el logo desde el classpath probando varias rutas típicas.
+     * Si no lo encuentra, retorna null y el reporte se genera sin logo.
+     */
+    private Image cargarLogo() {
+        for (String ruta : RUTAS_LOGO) {
+            try (InputStream is = getClass().getResourceAsStream(ruta)) {
+                if (is != null) {
+                    byte[] bytes = is.readAllBytes();
+                    return Image.getInstance(bytes);
+                }
+            } catch (IOException | com.lowagie.text.BadElementException ignored) {
+                // probamos la siguiente ruta
+            }
+        }
+        System.err.println("[ReporteUsuariosService] No se encontró el logo en ninguna ruta conocida.");
+        return null;
     }
 
     // ==========================================
