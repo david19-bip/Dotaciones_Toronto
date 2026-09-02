@@ -101,7 +101,6 @@ public class BodegueroController {
 
     @PostMapping("/perfil/actualizar")
     public String actualizarPerfil(
-            @RequestParam String nombre,
             @RequestParam String correo,
             @RequestParam String telefono,
             @RequestParam String direccion,
@@ -109,7 +108,6 @@ public class BodegueroController {
             Model model) {
 
         Usuario usuario = getUsuarioActual();
-        if (!nombre.isEmpty()) usuario.setNombre(nombre);
         if (!correo.isEmpty()) usuario.setCorreo(correo);
         if (!telefono.isEmpty()) usuario.setTelefono(telefono);
         if (!direccion.isEmpty()) usuario.setDireccion(direccion);

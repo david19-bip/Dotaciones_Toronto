@@ -1,11 +1,17 @@
 package com.dotacionestoronto.dotacionestoronto.controller;
 
 import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
+import com.dotacionestoronto.dotacionestoronto.entity.DetallePedido;
+import com.dotacionestoronto.dotacionestoronto.entity.DetalleVenta;
 import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
+import com.dotacionestoronto.dotacionestoronto.entity.Producto;
 import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
 import com.dotacionestoronto.dotacionestoronto.entity.Venta;
+import com.dotacionestoronto.dotacionestoronto.repository.DetallePedidoRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.DetalleVentaRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.DevolucionRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.VentaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +22,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Controller
@@ -33,6 +42,15 @@ public class VendedorController {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private ProductoRepository productoRepository;
+
+    @Autowired
+    private DetalleVentaRepository detalleVentaRepository;
+
+    @Autowired
+    private DetallePedidoRepository detallePedidoRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -60,15 +78,83 @@ public class VendedorController {
     // ==========================================
 
     @GetMapping("/pedidos")
-    public String pedidos(Model model) {
+    public String pedidos(
+            @RequestParam(required = false) String estado,
+            Model model) {
 
-        List<Pedido> pedidos =
-                pedidoRepository.findByOcultoFalseOrderByFechaPedidoDesc();
+        List<Pedido> pedidos;
 
-        model.addAttribute("pedidos", pedidos);
+        if (estado != null && !estado.isEmpty()) {
+            pedidos = pedidoRepository.findByEstadoAndOcultoFalse(estado);
+        } else {
+            pedidos = pedidoRepository.findByOcultoFalseOrderByFechaPedidoDesc();
+        }
+
+        List<PedidoVista> pedidosVista = new ArrayList<>();
+
+        for (Pedido pedido : pedidos) {
+            PedidoVista pv = new PedidoVista();
+            pv.pedido = pedido;
+
+            Usuario cliente = usuarioRepository.findById(pedido.getIdUsuario()).orElse(null);
+            if (cliente != null) {
+                pv.clienteNombre = cliente.getNombre();
+                pv.clienteCorreo = cliente.getCorreo();
+                pv.clienteTelefono = cliente.getTelefono();
+                pv.clienteDireccion = cliente.getDireccion();
+            }
+
+            List<DetallePedido> detalles = detallePedidoRepository.findByIdPedido(pedido.getId());
+            BigDecimal total = BigDecimal.ZERO;
+            for (DetallePedido detalle : detalles) {
+                ItemPedido item = new ItemPedido();
+                Producto producto = productoRepository.findById(detalle.getIdProducto()).orElse(null);
+                if (producto != null) {
+                    item.nombreProducto = producto.getNombre();
+                    item.talla = producto.getTalla();
+                    item.color = producto.getColor();
+                    item.imagen = producto.getImagen();
+                }
+                item.cantidad = detalle.getCantidad();
+                item.precioUnitario = detalle.getPrecioUnitario();
+                if (detalle.getPrecioUnitario() != null && detalle.getCantidad() != null) {
+                    item.subtotal = detalle.getPrecioUnitario()
+                            .multiply(BigDecimal.valueOf(detalle.getCantidad()));
+                    total = total.add(item.subtotal);
+                }
+                pv.items.add(item);
+            }
+            pv.total = total;
+
+            pedidosVista.add(pv);
+        }
+
+        model.addAttribute("pedidos", pedidosVista);
+        model.addAttribute("estadoActivo", estado);
         model.addAttribute("nombre", getUsuarioActual().getNombre());
 
         return "vendedor/pedidos_vendedor";
+    }
+
+    // DTOs para mostrar el detalle completo de cada pedido
+    public static class PedidoVista {
+        public Pedido pedido;
+        public String clienteNombre;
+        public String clienteCorreo;
+        public String clienteTelefono;
+        public String clienteDireccion;
+        public List<ItemPedido> items = new ArrayList<>();
+        public BigDecimal total;
+    }
+
+    public static class ItemPedido {
+        public String nombreProducto;
+        public String talla;
+        public String color;
+        public String imagen;
+        public Integer cantidad;
+        public BigDecimal precioUnitario;
+        public BigDecimal subtotal;
     }
 
     @PostMapping("/pedidos/cambiarEstado")
@@ -81,10 +167,55 @@ public class VendedorController {
 
         if (pedido != null) {
             pedido.setEstado(estado);
+
+            // Cuando el pedido pasa a "Entregado" se convierte en venta
+            // y desaparece del listado de pedidos.
+            if ("Entregado".equals(estado)) {
+                generarVentaDesdePedido(pedido);
+                pedido.setOculto(true);
+            }
+
             pedidoRepository.save(pedido);
         }
 
         return "redirect:/vendedor/pedidos";
+    }
+
+    /**
+     * Crea la venta y su detalle a partir de un pedido entregado,
+     * solo si aún no existe una venta registrada para ese pedido.
+     */
+    private void generarVentaDesdePedido(Pedido pedido) {
+
+        Venta ventaExistente = ventaRepository.findByIdPedido(pedido.getId());
+        if (ventaExistente != null) {
+            return; // Ya se generó la venta anteriormente, no se duplica
+        }
+
+        List<DetallePedido> detallesPedido = detallePedidoRepository.findByIdPedido(pedido.getId());
+
+        BigDecimal total = BigDecimal.ZERO;
+        for (DetallePedido dp : detallesPedido) {
+            if (dp.getPrecioUnitario() != null && dp.getCantidad() != null) {
+                total = total.add(dp.getPrecioUnitario().multiply(BigDecimal.valueOf(dp.getCantidad())));
+            }
+        }
+
+        Venta nuevaVenta = new Venta();
+        nuevaVenta.setIdUsuario(pedido.getIdUsuario());
+        nuevaVenta.setIdPedido(pedido.getId());
+        nuevaVenta.setFechaVenta(LocalDateTime.now());
+        nuevaVenta.setTotalPagado(total.doubleValue());
+        nuevaVenta = ventaRepository.save(nuevaVenta);
+
+        for (DetallePedido dp : detallesPedido) {
+            DetalleVenta dv = new DetalleVenta();
+            dv.setIdVenta(nuevaVenta.getId());
+            dv.setIdProducto(dp.getIdProducto());
+            dv.setCantidad(dp.getCantidad());
+            dv.setPrecioUnitario(dp.getPrecioUnitario());
+            detalleVentaRepository.save(dv);
+        }
     }
 
     // ==========================================
@@ -97,10 +228,72 @@ public class VendedorController {
         List<Venta> ventas =
                 ventaRepository.findAllByOrderByFechaVentaDesc();
 
-        model.addAttribute("ventas", ventas);
+        List<VentaVista> ventasVista = new ArrayList<>();
+
+        for (Venta venta : ventas) {
+            VentaVista vv = new VentaVista();
+            vv.venta = venta;
+
+            Usuario cliente = usuarioRepository.findById(venta.getIdUsuario()).orElse(null);
+            if (cliente != null) {
+                vv.clienteNombre = cliente.getNombre();
+                vv.clienteCorreo = cliente.getCorreo();
+                vv.clienteTelefono = cliente.getTelefono();
+                vv.clienteDireccion = cliente.getDireccion();
+            }
+
+            Pedido pedido = pedidoRepository.findById(venta.getIdPedido()).orElse(null);
+            if (pedido != null) {
+                vv.pedidoEstado = pedido.getEstado();
+            }
+
+            List<DetalleVenta> detalles = detalleVentaRepository.findByIdVenta(venta.getId());
+            for (DetalleVenta detalle : detalles) {
+                ItemVenta item = new ItemVenta();
+                Producto producto = productoRepository.findById(detalle.getIdProducto()).orElse(null);
+                if (producto != null) {
+                    item.nombreProducto = producto.getNombre();
+                    item.talla = producto.getTalla();
+                    item.color = producto.getColor();
+                    item.imagen = producto.getImagen();
+                }
+                item.cantidad = detalle.getCantidad();
+                item.precioUnitario = detalle.getPrecioUnitario();
+                if (detalle.getPrecioUnitario() != null && detalle.getCantidad() != null) {
+                    item.subtotal = detalle.getPrecioUnitario()
+                            .multiply(BigDecimal.valueOf(detalle.getCantidad()));
+                }
+                vv.items.add(item);
+            }
+
+            ventasVista.add(vv);
+        }
+
+        model.addAttribute("ventas", ventasVista);
         model.addAttribute("nombre", getUsuarioActual().getNombre());
 
         return "vendedor/ventas_vendedor";
+    }
+
+    // DTOs para mostrar el detalle completo de cada venta
+    public static class VentaVista {
+        public Venta venta;
+        public String clienteNombre;
+        public String clienteCorreo;
+        public String clienteTelefono;
+        public String clienteDireccion;
+        public String pedidoEstado;
+        public List<ItemVenta> items = new ArrayList<>();
+    }
+
+    public static class ItemVenta {
+        public String nombreProducto;
+        public String talla;
+        public String color;
+        public String imagen;
+        public Integer cantidad;
+        public BigDecimal precioUnitario;
+        public BigDecimal subtotal;
     }
 
     // ==========================================

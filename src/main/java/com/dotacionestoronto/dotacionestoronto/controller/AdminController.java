@@ -145,6 +145,42 @@ public class AdminController {
         return "redirect:/admin/usuarios";
     }
 
+    @GetMapping("/usuarios/editar")
+    public String editarUsuarioForm(@RequestParam Long id, Model model) {
+        Usuario usuario = usuarioRepository.findById(id).orElse(null);
+        if (usuario == null) {
+            return "redirect:/admin/usuarios";
+        }
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("nombre", getUsuarioActual().getNombre());
+        return "admin/editar_usuario_admin";
+    }
+
+    @PostMapping("/usuarios/actualizar")
+    public String actualizarUsuarioAdmin(
+            @RequestParam Long idUsuario,
+            @RequestParam String nombre,
+            @RequestParam String documento,
+            @RequestParam String correo,
+            @RequestParam String telefono,
+            @RequestParam String direccion,
+            @RequestParam Integer rol,
+            Model model) {
+
+        Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
+        if (usuario != null) {
+            usuario.setNombre(nombre);
+            usuario.setDocumento(documento);
+            usuario.setCorreo(correo);
+            usuario.setTelefono(telefono);
+            usuario.setDireccion(direccion);
+            usuario.setIdRol(rol);
+            
+            usuarioRepository.save(usuario);
+        }
+        return "redirect:/admin/usuarios";
+    }
+
     // ===== PRODUCTOS =====
     @GetMapping("/productos")
     public String productos(Model model) {
@@ -275,36 +311,36 @@ public class AdminController {
     }
 
     // ===== PERFIL =====
-@GetMapping("/perfil")
-public String perfil(Model model) {
-    Usuario usuario = getUsuarioActual();
-    model.addAttribute("usuario", usuario);
-    model.addAttribute("nombre", usuario.getNombre());
-    return "admin/perfil_admin";
-}
-
-@PostMapping("/perfil/actualizar")
-public String actualizarPerfil(
-        @RequestParam String nombre,
-        @RequestParam String correo,
-        @RequestParam String telefono,
-        @RequestParam String direccion,
-        @RequestParam(required = false) String password,
-        Model model) {
-
-    Usuario usuario = getUsuarioActual();
-    if (!nombre.isEmpty()) usuario.setNombre(nombre);
-    if (!correo.isEmpty()) usuario.setCorreo(correo);
-    if (!telefono.isEmpty()) usuario.setTelefono(telefono);
-    if (!direccion.isEmpty()) usuario.setDireccion(direccion);
-    if (password != null && !password.isEmpty()) {
-        usuario.setContrasena(passwordEncoder.encode(password));
+    @GetMapping("/perfil")
+    public String perfil(Model model) {
+        Usuario usuario = getUsuarioActual();
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("nombre", usuario.getNombre());
+        return "admin/perfil_admin";
     }
-    usuarioRepository.save(usuario);
 
-    model.addAttribute("usuario", usuario);
-    model.addAttribute("nombre", usuario.getNombre());
-    model.addAttribute("exito", "Perfil actualizado correctamente.");
-    return "admin/perfil_admin";
-}
+    @PostMapping("/perfil/actualizar")
+    public String actualizarPerfil(
+            @RequestParam String nombre,
+            @RequestParam String correo,
+            @RequestParam String telefono,
+            @RequestParam String direccion,
+            @RequestParam(required = false) String password,
+            Model model) {
+
+        Usuario usuario = getUsuarioActual();
+        if (!nombre.isEmpty()) usuario.setNombre(nombre);
+        if (!correo.isEmpty()) usuario.setCorreo(correo);
+        if (!telefono.isEmpty()) usuario.setTelefono(telefono);
+        if (!direccion.isEmpty()) usuario.setDireccion(direccion);
+        if (password != null && !password.isEmpty()) {
+            usuario.setContrasena(passwordEncoder.encode(password));
+        }
+        usuarioRepository.save(usuario);
+
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("nombre", usuario.getNombre());
+        model.addAttribute("exito", "Perfil actualizado correctamente.");
+        return "admin/perfil_admin";
+    }
 }
