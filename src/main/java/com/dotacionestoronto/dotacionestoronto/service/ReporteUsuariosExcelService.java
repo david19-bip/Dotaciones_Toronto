@@ -1,31 +1,19 @@
 package com.dotacionestoronto.dotacionestoronto.service;
 
+import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.*;
+import org.springframework.stereotype.Service;
+
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.FillPatternType;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.RichTextString;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.VerticalAlignment;
-import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.xssf.usermodel.XSSFCellStyle;
-import org.apache.poi.xssf.usermodel.XSSFColor;
-import org.apache.poi.xssf.usermodel.XSSFFont;
-import org.apache.poi.xssf.usermodel.XSSFRichTextString;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.stereotype.Service;
-
-import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
 
 @Service
 public class ReporteUsuariosExcelService {
@@ -40,9 +28,6 @@ public class ReporteUsuariosExcelService {
     private static final Color GRIS_CLARO    = new Color(0xF4, 0xF6, 0xFB);
     private static final Color BLANCO        = Color.WHITE;
 
-    // Acento propio del Excel (verde Excel oficial, marca la diferencia con el PDF)
-    private static final Color VERDE_EXCEL   = new Color(0x1D, 0x6F, 0x42);
-
     // Chips de rol/estado (mismos tonos que los badges de Bootstrap)
     private static final Color ROL_ADMIN     = new Color(0xDC, 0x35, 0x45);
     private static final Color ROL_CLIENTE   = new Color(0x0D, 0x6E, 0xFD);
@@ -52,6 +37,14 @@ public class ReporteUsuariosExcelService {
     private static final Color ESTADO_OFF    = new Color(0x6C, 0x75, 0x7D);
 
     private static final int COL_COUNT = 7; // ID, NOMBRE, DOCUMENTO, CORREO, TELEFONO, ROL, ESTADO
+
+    // Se prueban varias rutas típicas por si el archivo tiene espacio o guion bajo
+    private static final String[] RUTAS_LOGO = {
+            "/static/images/logo blanco.png",
+            "/static/images/logo_blanco.png",
+            "/images/logo blanco.png",
+            "/images/logo_blanco.png"
+    };
 
     public byte[] generarReporte(List<Usuario> usuarios) {
         try (XSSFWorkbook libro = new XSSFWorkbook();
@@ -79,7 +72,7 @@ public class ReporteUsuariosExcelService {
     }
 
     // ==========================================
-    // ENCABEZADO — banda navy + bloque contador dorado
+    // ENCABEZADO — logo + bloque título navy + bloque contador dorado
     // ==========================================
     private int agregarEncabezado(XSSFWorkbook libro, XSSFSheet hoja, int filaInicio, int totalUsuarios) {
         int filas = 3; // 0,1,2 relativas
@@ -88,9 +81,15 @@ public class ReporteUsuariosExcelService {
             hoja.createRow(filaInicio + i).setHeightInPoints(i == 1 ? 30f : 16f);
         }
 
-        // Bloque título (columnas 0-4)
-        hoja.addMergedRegion(new CellRangeAddress(filaInicio, filaInicio + filas - 1, 0, 4));
-        Cell celdaTitulo = hoja.getRow(filaInicio).createCell(0);
+        // Celda contenedora del logo (columna 0), fondo navy, sin texto
+        hoja.addMergedRegion(new CellRangeAddress(filaInicio, filaInicio + filas - 1, 0, 0));
+        Cell celdaLogo = hoja.getRow(filaInicio).createCell(0);
+        celdaLogo.setCellStyle(estiloFondo(libro, NAVY_OSCURO));
+        insertarLogo(libro, hoja, filaInicio, filas);
+
+        // Bloque título (columnas 1-4)
+        hoja.addMergedRegion(new CellRangeAddress(filaInicio, filaInicio + filas - 1, 1, 4));
+        Cell celdaTitulo = hoja.getRow(filaInicio).createCell(1);
         celdaTitulo.setCellValue(textoRico(libro,
                 new String[]{"DOTACIONES TORONTO\n",
                         "Reporte de usuarios del sistema\n",
@@ -119,6 +118,44 @@ public class ReporteUsuariosExcelService {
         return filaInicio + filas;
     }
 
+    /**
+     * Inserta el logo de la empresa dentro de la caja formada por la columna 0
+     * y las filas del banner. Si el recurso no existe, no rompe el reporte.
+     */
+    private void insertarLogo(XSSFWorkbook libro, XSSFSheet hoja, int filaInicio, int filas) {
+        byte[] logoBytes = cargarLogo();
+        if (logoBytes == null) {
+            return;
+        }
+        try {
+            int indiceImagen = libro.addPicture(logoBytes, Workbook.PICTURE_TYPE_PNG);
+            XSSFDrawing dibujo = hoja.createDrawingPatriarch();
+            XSSFClientAnchor ancla = new XSSFClientAnchor();
+            ancla.setCol1(0);
+            ancla.setRow1(filaInicio);
+            ancla.setCol2(1);
+            ancla.setRow2(filaInicio + filas);
+            ancla.setAnchorType(ClientAnchor.AnchorType.MOVE_AND_RESIZE);
+            dibujo.createPicture(ancla, indiceImagen);
+        } catch (Exception ignored) {
+            // Si algo falla insertando la imagen, el reporte se sigue generando sin logo
+        }
+    }
+
+    private byte[] cargarLogo() {
+        for (String ruta : RUTAS_LOGO) {
+            try (InputStream is = getClass().getResourceAsStream(ruta)) {
+                if (is != null) {
+                    return is.readAllBytes();
+                }
+            } catch (IOException ignored) {
+                // probamos la siguiente ruta
+            }
+        }
+        System.err.println("[ReporteUsuariosExcelService] No se encontró el logo en ninguna ruta conocida.");
+        return null;
+    }
+
     private int agregarFranjaDorada(XSSFWorkbook libro, XSSFSheet hoja, int filaInicio) {
         Row fila = hoja.createRow(filaInicio);
         fila.setHeightInPoints(4f);
@@ -138,7 +175,6 @@ public class ReporteUsuariosExcelService {
         long clientes = usuarios.stream().filter(u -> u.getIdRol() != null && u.getIdRol() == 2).count();
         long staff = usuarios.size() - clientes;
 
-        // Franja de acento (fila superior de cada tarjeta)
         hoja.createRow(filaInicio).setHeightInPoints(3f);
         agregarTarjetaStat(libro, hoja, filaInicio, 0, 1, String.valueOf(habilitados), "HABILITADOS", ESTADO_OK);
         agregarTarjetaStat(libro, hoja, filaInicio, 2, 2, String.valueOf(inhabilitados), "INHABILITADOS", ESTADO_OFF);
@@ -150,13 +186,11 @@ public class ReporteUsuariosExcelService {
 
     private void agregarTarjetaStat(XSSFWorkbook libro, XSSFSheet hoja, int filaAccent,
                                      int colInicio, int colFin, String numero, String etiqueta, Color acento) {
-        // Barra de acento
         if (colFin > colInicio) {
             hoja.addMergedRegion(new CellRangeAddress(filaAccent, filaAccent, colInicio, colFin));
         }
         hoja.getRow(filaAccent).createCell(colInicio).setCellStyle(estiloFondo(libro, acento));
 
-        // Cuerpo de la tarjeta
         int filaCuerpo = filaAccent + 1;
         if (hoja.getRow(filaCuerpo) == null) {
             hoja.createRow(filaCuerpo).setHeightInPoints(34f);
@@ -223,7 +257,6 @@ public class ReporteUsuariosExcelService {
             filaActual++;
         }
 
-        // Autofiltro + panel congelado bajo el encabezado de la tabla
         hoja.setAutoFilter(new CellRangeAddress(filaInicio, filaActual - 1, 0, COL_COUNT - 1));
         hoja.createFreezePane(0, filaInicio + 1);
     }
@@ -298,10 +331,6 @@ public class ReporteUsuariosExcelService {
         }, null);
     }
 
-    /**
-     * Construye un texto enriquecido (varias líneas con distinta fuente) para
-     * simular, dentro de una sola celda, el efecto de título/subtítulo del PDF.
-     */
     private RichTextString textoRico(XSSFWorkbook libro, String[] segmentos, Font[] fuentes) {
         StringBuilder sb = new StringBuilder();
         List<int[]> rangos = new ArrayList<>();
@@ -318,7 +347,7 @@ public class ReporteUsuariosExcelService {
     }
 
     private void ajustarAnchosColumnas(XSSFSheet hoja) {
-        int[] anchos = {2600, 7200, 4200, 8200, 4200, 3600, 4200}; // en unidades de 1/256 char
+        int[] anchos = {3400, 6800, 4200, 8200, 4200, 3600, 4200}; // en unidades de 1/256 char
         for (int c = 0; c < anchos.length; c++) {
             hoja.setColumnWidth(c, anchos[c]);
         }
