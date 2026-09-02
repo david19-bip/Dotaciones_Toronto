@@ -1,52 +1,248 @@
+/* ==========================================================
+   ESTILO VENDEDOR - DOTACIONES TORONTO (MODERNO COMERCIAL)
+   ========================================================== */
+
 body {
-  background-color: #f1f5f9;
+    background-color: #f4f6f9;
+    font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #0f172a;
 }
+
+/* --- BARRA LATERAL (SIDEBAR COMERCIAL) --- */
 .sidebar {
-  min-height: 100vh;
-  background-color: #1e293b;
-  padding: 20px 0;
-  position: fixed;
-  width: 220px;
+    min-height: 100vh;
+    background: linear-gradient(180deg, #1b1e2f 0%, #11131c 100%);
+    padding: 24px 0;
+    position: fixed;
+    width: 220px;
+    box-shadow: 6px 0 25px rgba(0, 0, 0, 0.08);
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+    z-index: 100;
 }
+
 .sidebar-brand {
-  color: #f8fafc;
-  font-size: 1.1rem;
-  font-weight: 700;
-  padding: 10px 20px 20px;
-  border-bottom: 1px solid #334155;
-  margin-bottom: 10px;
+    text-align: center;
+    padding: 10px 0 25px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 16px;
 }
+
+.brand-logo {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto 10px;
+    filter: drop-shadow(0 4px 12px rgba(16, 185, 129, 0.35));
+    transition: transform 0.3s ease;
+}
+
+.brand-logo:hover {
+    transform: scale(1.05) rotate(-2deg);
+}
+
+.brand-title {
+    background: linear-gradient(135deg, #34d399, #059669);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+}
+
 .sidebar a {
-  display: block;
-  color: #94a3b8;
-  padding: 10px 20px;
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    color: #94a3b8;
+    padding: 12px 20px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin: 4px 12px;
+    border-radius: 10px;
+    transition: all 0.25s ease;
 }
-.sidebar a:hover,
+
+.sidebar a:hover {
+    background: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+    transform: translateX(4px);
+}
+
 .sidebar a.active {
-  background-color: #334155;
-  color: #f8fafc;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 15px rgba(5, 150, 105, 0.35);
 }
+
 .sidebar a i {
-  margin-right: 8px;
+    margin-right: 10px;
+    font-size: 1.1rem;
 }
+
+/* --- CONTENEDOR PRINCIPAL --- */
 .main-content {
-  margin-left: 220px;
-  padding: 30px;
+    margin-left: 220px;
+    padding: 40px;
 }
-.card-stat {
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+
+/* --- BANNER DE BIENVENIDA --- */
+.welcome-banner {
+    background: linear-gradient(135deg, #059669 0%, #047857 60%, #065f46 100%);
+    border-radius: 20px;
+    padding: 32px 36px;
+    margin-bottom: 28px;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(5, 150, 105, 0.25);
 }
+
+.welcome-banner::after {
+    content: "";
+    position: absolute;
+    right: -40px;
+    top: -40px;
+    width: 180px;
+    height: 180px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+}
+
+.welcome-banner::before {
+    content: "";
+    position: absolute;
+    right: 60px;
+    bottom: -60px;
+    width: 120px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 50%;
+}
+
+.welcome-banner h4 {
+    color: #ffffff !important;
+    font-size: 1.6rem;
+    position: relative;
+    z-index: 1;
+}
+
+.welcome-banner p {
+    color: rgba(255, 255, 255, 0.85) !important;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 0;
+}
+
+/* --- TARJETAS Y MÓDULOS (ESTILO COMERCIAL / VENTAS) --- */
+.card, .card-stat {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 18px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+    background-color: #ffffff !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover, .card-stat:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.07) !important;
+    border-color: #cbd5e1 !important;
+}
+
 .card-stat .icon {
-  font-size: 2rem;
-  width: 50px;
-  height: 50px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    font-size: 1.6rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ecfdf5;
+    color: #059669;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+}
+
+.card-stat .stat-label {
+    font-size: 0.78rem;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.card-stat .stat-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+/* --- ACCESOS RÁPIDOS --- */
+.quick-card {
+    padding: 32px 24px;
+    text-align: center;
+    position: relative;
+}
+
+.quick-card .quick-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 1.9rem;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.quick-card h6 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.quick-card p {
+    min-height: 40px;
+}
+
+.section-title {
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+
+.section-subtitle {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+}
+
+/* --- BOTONES DE ACCIÓN COMERCIAL --- */
+.card .btn, .main-content .btn {
+    border-radius: 12px;
+    padding: 11px 24px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.card .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #059669, #047857) !important;
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    color: #fff !important;
 }

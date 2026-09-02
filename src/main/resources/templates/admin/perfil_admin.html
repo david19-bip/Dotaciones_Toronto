@@ -10,7 +10,20 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Estilo propio del Administrador -->
     <link th:href="@{/css/admin.css}" rel="stylesheet">
+    <link th:href="@{/css/loader.css}" rel="stylesheet">
 </head>
+<body>
+
+        <!-- LOADER -->
+    <div id="loader-overlay">
+        <div class="loader-box">
+            <div class="loader-logo-wrapper">
+                <div class="loader-ring"></div>
+                <img th:src="@{/images/logo negro.png}" alt="Logo">
+            </div>
+            <div class="loader-text">Cargando...</div>
+        </div>
+    </div>
 <body th:style="'background-image: url(' + @{/images/fondo_admin.svg} + '); background-size: cover; background-position: center; background-attachment: fixed; background-repeat: no-repeat;'">
 
     <!-- Sidebar Administrador -->
@@ -106,12 +119,7 @@
                     </div>
 
                     <form id="formPerfil" th:action="@{/admin/perfil/actualizar}" method="post" novalidate>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small text-secondary">Nombre</label>
-                            <input type="text" id="nombre" name="nombre" class="form-control"
-                                   th:value="${usuario.nombre}" required>
-                            <div class="invalid-feedback">El nombre solo debe contener letras y espacios.</div>
-                        </div>
+
                         <div class="mb-3">
                             <label class="form-label fw-semibold small text-secondary">Correo Electrónico</label>
                             <input type="email" id="correo" name="correo" class="form-control"
@@ -242,5 +250,7 @@
             });
         });
     </script>
+    <script th:src="@{/js/loader.js}"></script>
+
 </body>
 </html>

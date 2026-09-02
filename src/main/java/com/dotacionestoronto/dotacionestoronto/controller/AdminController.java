@@ -1,14 +1,15 @@
 package com.dotacionestoronto.dotacionestoronto.controller;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,24 +19,19 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
 
-import com.dotacionestoronto.dotacionestoronto.entity.DetallePedido;
-import com.dotacionestoronto.dotacionestoronto.entity.DetalleVenta;
 import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
 import com.dotacionestoronto.dotacionestoronto.entity.Inventario;
 import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
 import com.dotacionestoronto.dotacionestoronto.entity.Producto;
 import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
-import com.dotacionestoronto.dotacionestoronto.entity.Venta;
-import com.dotacionestoronto.dotacionestoronto.repository.DetallePedidoRepository;
-import com.dotacionestoronto.dotacionestoronto.repository.DetalleVentaRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.DevolucionRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.InventarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
-import com.dotacionestoronto.dotacionestoronto.repository.VentaRepository;
+import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosExcelService;
+import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosService;
 
 @Controller
 @RequestMapping("/admin")
@@ -57,16 +53,13 @@ public class AdminController {
     private InventarioRepository inventarioRepository;
 
     @Autowired
-    private DetallePedidoRepository detallePedidoRepository;
-
-    @Autowired
-    private VentaRepository ventaRepository;
-
-    @Autowired
-    private DetalleVentaRepository detalleVentaRepository;
-
-    @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ReporteUsuariosService reporteUsuariosService;
+
+    @Autowired
+    private ReporteUsuariosExcelService reporteUsuariosExcelService;
 
     private Usuario getUsuarioActual() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -131,9 +124,49 @@ public class AdminController {
         return "redirect:/admin/usuarios";
     }
 
-    // --- NUEVO: Mostrar formulario de edición ---
+    @GetMapping("/usuarios/reporte")
+    public ResponseEntity<byte[]> reporteUsuarios() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+        byte[] pdf = reporteUsuariosService.generarReporte(usuarios);
+
+        String nombreArchivo = "reporte-usuarios-" +
+                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".pdf";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(ContentDisposition.inline().filename(nombreArchivo).build());
+
+        return ResponseEntity.ok().headers(headers).body(pdf);
+    }
+
+    @GetMapping("/usuarios/reporte/excel")
+    public ResponseEntity<byte[]> reporteUsuariosExcel() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+        byte[] excel = reporteUsuariosExcelService.generarReporte(usuarios);
+
+        String nombreArchivo = "reporte-usuarios-" +
+                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(nombreArchivo).build());
+
+        return ResponseEntity.ok().headers(headers).body(excel);
+    }
+
+    @PostMapping("/usuarios/toggleEstado")
+    public String toggleEstadoUsuario(@RequestParam Long idUsuario) {
+        Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
+        if (usuario != null) {
+            usuario.setEstado(usuario.getEstado().equals("Habilitado") ? "Inhabilitado" : "Habilitado");
+            usuarioRepository.save(usuario);
+        }
+        return "redirect:/admin/usuarios";
+    }
+
     @GetMapping("/usuarios/editar")
-    public String editarUsuarioForm(@RequestParam("id") Long id, Model model) {
+    public String editarUsuarioForm(@RequestParam Long id, Model model) {
         Usuario usuario = usuarioRepository.findById(id).orElse(null);
         if (usuario == null) {
             return "redirect:/admin/usuarios";
@@ -143,17 +176,16 @@ public class AdminController {
         return "admin/editar_usuario_admin";
     }
 
-    // --- NUEVO: Procesar actualización de usuario ---
     @PostMapping("/usuarios/actualizar")
-    public String actualizarUsuario(
+    public String actualizarUsuarioAdmin(
             @RequestParam Long idUsuario,
             @RequestParam String nombre,
             @RequestParam String documento,
             @RequestParam String correo,
             @RequestParam String telefono,
             @RequestParam String direccion,
-            @RequestParam(required = false) String password,
-            @RequestParam Integer rol) {
+            @RequestParam Integer rol,
+            Model model) {
 
         Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
         if (usuario != null) {
@@ -163,23 +195,7 @@ public class AdminController {
             usuario.setTelefono(telefono);
             usuario.setDireccion(direccion);
             usuario.setIdRol(rol);
-
-            // Si se ingresó una nueva contraseña, la encripta y actualiza
-            if (password != null && !password.trim().isEmpty()) {
-                usuario.setContrasena(passwordEncoder.encode(password));
-            }
-
-            usuarioRepository.save(usuario);
-        }
-
-        return "redirect:/admin/usuarios";
-    }
-
-    @PostMapping("/usuarios/toggleEstado")
-    public String toggleEstadoUsuario(@RequestParam Long idUsuario) {
-        Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
-        if (usuario != null) {
-            usuario.setEstado(usuario.getEstado().equals("Habilitado") ? "Inhabilitado" : "Habilitado");
+            
             usuarioRepository.save(usuario);
         }
         return "redirect:/admin/usuarios";
@@ -198,8 +214,7 @@ public class AdminController {
             @RequestParam String nombre,
             @RequestParam BigDecimal precio,
             @RequestParam String talla,
-            @RequestParam String color,
-            @RequestParam(required = false) MultipartFile imagen) throws IOException {
+            @RequestParam String color) {
 
         Producto producto = new Producto();
         producto.setNombre(nombre);
@@ -208,20 +223,8 @@ public class AdminController {
         producto.setColor(color);
         producto.setEstado("Disponible");
         producto.setInhabilitado(false);
-
-        if (imagen != null && !imagen.isEmpty()) {
-            String nombreArchivo = System.currentTimeMillis() + "_" + imagen.getOriginalFilename();
-            Path ruta = Paths.get("uploads/productos/" + nombreArchivo);
-
-            // TEMPORAL: para ver dónde se está guardando realmente
-            System.out.println(">>> Guardando imagen en: " + ruta.toAbsolutePath());
-
-            Files.createDirectories(ruta.getParent());
-            Files.write(ruta, imagen.getBytes());
-            producto.setImagen("images/productos/" + nombreArchivo);
-        }
-
         productoRepository.save(producto);
+
         return "redirect:/admin/productos";
     }
 
@@ -291,48 +294,10 @@ public class AdminController {
     @PostMapping("/pedidos/cambiarEstado")
     public String cambiarEstadoPedido(@RequestParam Long idPedido, @RequestParam String estado) {
         Pedido pedido = pedidoRepository.findById(idPedido).orElse(null);
-
         if (pedido != null) {
-            String estadoAnterior = pedido.getEstado();
-
             pedido.setEstado(estado);
             pedidoRepository.save(pedido);
-
-            // Si el pedido pasa a "Entregado" y aún no tiene una venta registrada,
-            // generamos la Venta y su DetalleVenta a partir del Pedido/DetallePedido.
-            // Esto es lo que permite luego solicitar devoluciones sobre este pedido.
-            boolean pasaAEntregado = "Entregado".equalsIgnoreCase(estado)
-                    && !"Entregado".equalsIgnoreCase(estadoAnterior);
-
-            if (pasaAEntregado) {
-                Venta ventaExistente = ventaRepository.findByIdPedido(idPedido);
-
-                if (ventaExistente == null) {
-                    List<DetallePedido> detallesPedido = detallePedidoRepository.findByIdPedido(idPedido);
-
-                    BigDecimal total = detallesPedido.stream()
-                            .map(d -> d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad())))
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                    Venta venta = new Venta();
-                    venta.setIdUsuario(pedido.getIdUsuario());
-                    venta.setFechaVenta(LocalDateTime.now());
-                    venta.setTotalPagado(total.doubleValue());
-                    venta.setIdPedido(idPedido);
-                    venta = ventaRepository.save(venta);
-
-                    for (DetallePedido dp : detallesPedido) {
-                        DetalleVenta dv = new DetalleVenta();
-                        dv.setIdVenta(venta.getId());
-                        dv.setIdProducto(dp.getIdProducto());
-                        dv.setCantidad(dp.getCantidad());
-                        dv.setPrecioUnitario(dp.getPrecioUnitario());
-                        detalleVentaRepository.save(dv);
-                    }
-                }
-            }
         }
-
         return "redirect:/admin/pedidos";
     }
 
