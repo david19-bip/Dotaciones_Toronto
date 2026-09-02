@@ -22,6 +22,18 @@
             background: #e2b96f;
             border-color: #e2b96f;
         }
+        .btn-reporte-excel {
+            background: linear-gradient(135deg, #1a1a2e 0%, #1d6f42 100%);
+            color: #ffffff;
+            border: 1px solid rgba(29, 111, 66, 0.5);
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-reporte-excel:hover {
+            color: #1a1a2e;
+            background: #34c37a;
+            border-color: #34c37a;
+        }
     </style>
 </head>
 <body>
@@ -68,6 +80,9 @@
             <div class="d-flex gap-2">
                 <a th:href="@{/admin/usuarios/reporte}" target="_blank" class="btn btn-reporte shadow-sm">
                     <i class="bi bi-file-earmark-pdf-fill me-1"></i> Reporte PDF
+                </a>
+                <a th:href="@{/admin/usuarios/reporte/excel}" class="btn btn-reporte-excel shadow-sm">
+                    <i class="bi bi-file-earmark-excel-fill me-1"></i> Reporte Excel
                 </a>
                 <button class="btn btn-admin shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCrearUsuario">
                     <i class="bi bi-person-plus me-1"></i> Nuevo Usuario

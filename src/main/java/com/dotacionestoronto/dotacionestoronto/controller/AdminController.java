@@ -30,6 +30,7 @@ import com.dotacionestoronto.dotacionestoronto.repository.InventarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
+import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosExcelService;
 import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosService;
 
 @Controller
@@ -56,6 +57,9 @@ public class AdminController {
 
     @Autowired
     private ReporteUsuariosService reporteUsuariosService;
+
+    @Autowired
+    private ReporteUsuariosExcelService reporteUsuariosExcelService;
 
     private Usuario getUsuarioActual() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -133,6 +137,22 @@ public class AdminController {
         headers.setContentDisposition(ContentDisposition.inline().filename(nombreArchivo).build());
 
         return ResponseEntity.ok().headers(headers).body(pdf);
+    }
+
+    @GetMapping("/usuarios/reporte/excel")
+    public ResponseEntity<byte[]> reporteUsuariosExcel() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+        byte[] excel = reporteUsuariosExcelService.generarReporte(usuarios);
+
+        String nombreArchivo = "reporte-usuarios-" +
+                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(nombreArchivo).build());
+
+        return ResponseEntity.ok().headers(headers).body(excel);
     }
 
     @PostMapping("/usuarios/toggleEstado")
