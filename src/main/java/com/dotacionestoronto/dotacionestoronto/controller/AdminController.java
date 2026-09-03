@@ -1,6 +1,10 @@
 package com.dotacionestoronto.dotacionestoronto.controller;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -10,6 +14,7 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
 import com.dotacionestoronto.dotacionestoronto.entity.Inventario;
@@ -195,7 +201,7 @@ public class AdminController {
             usuario.setTelefono(telefono);
             usuario.setDireccion(direccion);
             usuario.setIdRol(rol);
-            
+
             usuarioRepository.save(usuario);
         }
         return "redirect:/admin/usuarios";
@@ -214,7 +220,8 @@ public class AdminController {
             @RequestParam String nombre,
             @RequestParam BigDecimal precio,
             @RequestParam String talla,
-            @RequestParam String color) {
+            @RequestParam String color,
+            @RequestParam(required = false) MultipartFile imagen) throws IOException {
 
         Producto producto = new Producto();
         producto.setNombre(nombre);
@@ -223,8 +230,16 @@ public class AdminController {
         producto.setColor(color);
         producto.setEstado("Disponible");
         producto.setInhabilitado(false);
-        productoRepository.save(producto);
 
+        if (imagen != null && !imagen.isEmpty()) {
+            String nombreArchivo = System.currentTimeMillis() + "_" + imagen.getOriginalFilename();
+            Path ruta = Paths.get("uploads/productos/" + nombreArchivo);
+            Files.createDirectories(ruta.getParent());
+            Files.write(ruta, imagen.getBytes());
+            producto.setImagen("images/productos/" + nombreArchivo);
+        }
+
+        productoRepository.save(producto);
         return "redirect:/admin/productos";
     }
 
@@ -341,7 +356,7 @@ public class AdminController {
 
     @PostMapping("/perfil/actualizar")
     public String actualizarPerfil(
-            @RequestParam String nombre,
+            @RequestParam(required = false) String nombre,
             @RequestParam String correo,
             @RequestParam String telefono,
             @RequestParam String direccion,
@@ -349,14 +364,28 @@ public class AdminController {
             Model model) {
 
         Usuario usuario = getUsuarioActual();
-        if (!nombre.isEmpty()) usuario.setNombre(nombre);
-        if (!correo.isEmpty()) usuario.setCorreo(correo);
+        if (nombre != null && !nombre.isEmpty()) usuario.setNombre(nombre);
         if (!telefono.isEmpty()) usuario.setTelefono(telefono);
         if (!direccion.isEmpty()) usuario.setDireccion(direccion);
         if (password != null && !password.isEmpty()) {
             usuario.setContrasena(passwordEncoder.encode(password));
         }
-        usuarioRepository.save(usuario);
+
+        // Si el correo cambia, actualizamos la autenticación de Spring Security
+        if (!correo.isEmpty() && !correo.equals(usuario.getCorreo())) {
+            usuario.setCorreo(correo);
+            usuarioRepository.save(usuario);
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            Authentication newAuth = new UsernamePasswordAuthenticationToken(
+                    correo,
+                    auth.getCredentials(),
+                    auth.getAuthorities()
+            );
+            SecurityContextHolder.getContext().setAuthentication(newAuth);
+        } else {
+            usuarioRepository.save(usuario);
+        }
 
         model.addAttribute("usuario", usuario);
         model.addAttribute("nombre", usuario.getNombre());

@@ -1,8 +1,25 @@
 package com.dotacionestoronto.dotacionestoronto.controller;
 
-import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 import com.dotacionestoronto.dotacionestoronto.entity.DetallePedido;
 import com.dotacionestoronto.dotacionestoronto.entity.DetalleVenta;
+import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
 import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
 import com.dotacionestoronto.dotacionestoronto.entity.Producto;
 import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
@@ -14,18 +31,6 @@ import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.VentaRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Controller
 @RequestMapping("/vendedor")
@@ -70,10 +75,8 @@ public class VendedorController {
 
         model.addAttribute("nombre", usuario.getNombre());
 
-        // Pedidos pendientes (no ocultos)
         long pedidosPendientes = pedidoRepository.countByEstadoAndOcultoFalse("Pendiente");
 
-        // Ventas realizadas en el mes actual
         LocalDateTime ahora = LocalDateTime.now();
         long ventasDelMes = ventaRepository.findAllByOrderByFechaVentaDesc().stream()
                 .filter(v -> v.getFechaVenta() != null
@@ -81,7 +84,6 @@ public class VendedorController {
                         && v.getFechaVenta().getYear() == ahora.getYear())
                 .count();
 
-        // Devoluciones pendientes por revisar
         long devolucionesPendientes = devolucionRepository.findByEstado("Pendiente").size();
 
         model.addAttribute("pedidosPendientes", pedidosPendientes);
@@ -154,7 +156,6 @@ public class VendedorController {
         return "vendedor/pedidos_vendedor";
     }
 
-    // DTOs para mostrar el detalle completo de cada pedido
     public static class PedidoVista {
         public Pedido pedido;
         public String clienteNombre;
@@ -186,8 +187,6 @@ public class VendedorController {
         if (pedido != null) {
             pedido.setEstado(estado);
 
-            // Cuando el pedido pasa a "Entregado" se convierte en venta
-            // y desaparece del listado de pedidos.
             if ("Entregado".equals(estado)) {
                 generarVentaDesdePedido(pedido);
                 pedido.setOculto(true);
@@ -199,15 +198,11 @@ public class VendedorController {
         return "redirect:/vendedor/pedidos";
     }
 
-    /**
-     * Crea la venta y su detalle a partir de un pedido entregado,
-     * solo si aún no existe una venta registrada para ese pedido.
-     */
     private void generarVentaDesdePedido(Pedido pedido) {
 
         Venta ventaExistente = ventaRepository.findByIdPedido(pedido.getId());
         if (ventaExistente != null) {
-            return; // Ya se generó la venta anteriormente, no se duplica
+            return;
         }
 
         List<DetallePedido> detallesPedido = detallePedidoRepository.findByIdPedido(pedido.getId());
@@ -293,7 +288,6 @@ public class VendedorController {
         return "vendedor/ventas_vendedor";
     }
 
-    // DTOs para mostrar el detalle completo de cada venta
     public static class VentaVista {
         public Venta venta;
         public String clienteNombre;
@@ -371,6 +365,8 @@ public class VendedorController {
 
         Usuario usuario = getUsuarioActual();
 
+        boolean correoCambio = correo != null && !correo.isEmpty() && !correo.equals(usuario.getCorreo());
+
         if (correo != null && !correo.isEmpty()) {
             usuario.setCorreo(correo);
         }
@@ -390,6 +386,20 @@ public class VendedorController {
         }
 
         usuarioRepository.save(usuario);
+
+        // Si el correo cambió, hay que actualizar también la sesión de
+        // Spring Security, porque de lo contrario sigue "recordando" el
+        // correo viejo y las siguientes búsquedas de usuario fallan
+        // (findByCorreo devuelve null -> NullPointerException).
+        if (correoCambio) {
+            Authentication authActual = SecurityContextHolder.getContext().getAuthentication();
+            Authentication nuevaAuth = new UsernamePasswordAuthenticationToken(
+                    usuario.getCorreo(),
+                    authActual.getCredentials(),
+                    authActual.getAuthorities()
+            );
+            SecurityContextHolder.getContext().setAuthentication(nuevaAuth);
+        }
 
         model.addAttribute("usuario", usuario);
         model.addAttribute("nombre", usuario.getNombre());

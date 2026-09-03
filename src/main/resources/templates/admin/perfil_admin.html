@@ -14,7 +14,7 @@
 </head>
 <body>
 
-        <!-- LOADER -->
+    <!-- LOADER -->
     <div id="loader-overlay">
         <div class="loader-box">
             <div class="loader-logo-wrapper">
@@ -24,6 +24,7 @@
             <div class="loader-text">Cargando...</div>
         </div>
     </div>
+
 <body th:style="'background-image: url(' + @{/images/fondo_admin.svg} + '); background-size: cover; background-position: center; background-attachment: fixed; background-repeat: no-repeat;'">
 
     <!-- Sidebar Administrador -->
@@ -160,14 +161,12 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const form = document.getElementById("formPerfil");
-            const nombre = document.getElementById("nombre");
             const correo = document.getElementById("correo");
             const telefono = document.getElementById("telefono");
             const direccion = document.getElementById("direccion");
             const password = document.getElementById("password");
 
             function validarCampo(input, condicion) {
-                // Si el campo está vacío al escribir, limpiamos las clases para no saturar visualmente
                 if (input.value.trim() === "" && input !== password) {
                     input.classList.remove("is-invalid", "is-valid");
                     return false;
@@ -183,14 +182,9 @@
                 }
             }
 
-            const regexNombre = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
             const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             const regexTelefono = /^[0-9]{7,15}$/;
             const regexDireccion = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ#\s.-]+$/;
-
-            nombre.addEventListener("input", () => {
-                validarCampo(nombre, regexNombre.test(nombre.value.trim()));
-            });
 
             correo.addEventListener("input", () => {
                 validarCampo(correo, regexCorreo.test(correo.value.trim()));
@@ -218,17 +212,12 @@
             });
 
             form.addEventListener("submit", function(event) {
-                const esNombreValid = regexNombre.test(nombre.value.trim());
                 const esCorreoValid = regexCorreo.test(correo.value.trim());
                 const esTelefonoValid = regexTelefono.test(telefono.value.trim());
                 const esDireccionValid = regexDireccion.test(direccion.value.trim());
                 
                 const passVal = password.value;
                 const esPasswordValid = (passVal === "" || passVal.length >= 6);
-
-                // Forzar la validación visual de todos los campos al presionar Guardar
-                if (!esNombreValid) nombre.classList.add("is-invalid");
-                else nombre.classList.add("is-valid");
 
                 if (!esCorreoValid) correo.classList.add("is-invalid");
                 else correo.classList.add("is-valid");
@@ -243,7 +232,7 @@
                     password.classList.add("is-invalid");
                 }
 
-                if (!esNombreValid || !esCorreoValid || !esTelefonoValid || !esDireccionValid || !esPasswordValid) {
+                if (!esCorreoValid || !esTelefonoValid || !esDireccionValid || !esPasswordValid) {
                     event.preventDefault();
                     event.stopPropagation();
                 }

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -49,68 +50,69 @@ public class BodegueroController {
         return usuarioRepository.findByCorreo(auth.getName());
     }
 
-   @GetMapping("/panel")
-public String panel(Model model) {
-    List<Inventario> inventarios = inventarioRepository.findAll();
-    List<Producto> productos = productoRepository.findAll();
+    @GetMapping("/panel")
+    public String panel(Model model) {
+        List<Inventario> inventarios = inventarioRepository.findAll();
+        List<Producto> productos = productoRepository.findAll();
 
-    List<Map<String, Object>> listaTabla = new ArrayList<>();
+        List<Map<String, Object>> listaTabla = new ArrayList<>();
 
-    long totalProductos = productos.size();
-    long totalStockBajo = 0;
-    long totalAgotados = 0;
+        long totalProductos = productos.size();
+        long totalStockBajo = 0;
+        long totalAgotados = 0;
 
-    for (Producto prod : productos) {
-        Long idProd = prod.getId();
+        for (Producto prod : productos) {
+            Long idProd = prod.getId();
 
-        Inventario invEncontrado = null;
-        if (idProd != null && inventarios != null) {
-            for (Inventario inv : inventarios) {
-                if (inv.getIdProducto() != null && idProd.equals(inv.getIdProducto())) {
-                    invEncontrado = inv;
-                    break;
+            Inventario invEncontrado = null;
+            if (idProd != null && inventarios != null) {
+                for (Inventario inv : inventarios) {
+                    if (inv.getIdProducto() != null && idProd.equals(inv.getIdProducto())) {
+                        invEncontrado = inv;
+                        break;
+                    }
                 }
+            }
+
+            int cantidadActual = (invEncontrado != null && invEncontrado.getCantidadActual() != null) 
+                                 ? invEncontrado.getCantidadActual() : 0;
+                                 
+            int stockMinimo = (invEncontrado != null && invEncontrado.getStockMinimo() != null) 
+                              ? invEncontrado.getStockMinimo() : 0;
+
+            // Conteo general de métricas
+            if (cantidadActual == 0) {
+                totalAgotados++;
+            } else if (cantidadActual <= stockMinimo) {
+                totalStockBajo++;
+            }
+
+            // FILTRO CRÍTICO: Agregar a la tabla SOLO si está agotado (0) o si tiene stock bajo (<= stockMinimo)
+            if (cantidadActual <= stockMinimo) {
+                Map<String, Object> fila = new HashMap<>();
+                
+                String nombreCompleto = prod.getNombre();
+                if (prod.getTalla() != null) nombreCompleto += " - " + prod.getTalla();
+                if (prod.getColor() != null) nombreCompleto += " (" + prod.getColor() + ")";
+
+                fila.put("nombre", nombreCompleto);
+                fila.put("cantidadActual", cantidadActual);
+                fila.put("stockMinimo", stockMinimo);
+
+                listaTabla.add(fila);
             }
         }
 
-        int cantidadActual = (invEncontrado != null && invEncontrado.getCantidadActual() != null) 
-                             ? invEncontrado.getCantidadActual() : 0;
-                             
-        int stockMinimo = (invEncontrado != null && invEncontrado.getStockMinimo() != null) 
-                          ? invEncontrado.getStockMinimo() : 0;
+        model.addAttribute("nombre", getUsuarioActual().getNombre());
+        model.addAttribute("totalProductos", totalProductos);
+        model.addAttribute("totalStockBajo", totalStockBajo);
+        model.addAttribute("totalAgotados", totalAgotados);
+        model.addAttribute("totalInventario", inventarios.size());
+        model.addAttribute("listaTabla", listaTabla);
 
-        // Conteo general de métricas
-        if (cantidadActual == 0) {
-            totalAgotados++;
-        } else if (cantidadActual <= stockMinimo) {
-            totalStockBajo++;
-        }
-
-        // FILTRO CRÍTICO: Agregar a la tabla SOLO si está agotado (0) o si tiene stock bajo (<= stockMinimo)
-        if (cantidadActual <= stockMinimo) {
-            Map<String, Object> fila = new HashMap<>();
-            
-            String nombreCompleto = prod.getNombre();
-            if (prod.getTalla() != null) nombreCompleto += " - " + prod.getTalla();
-            if (prod.getColor() != null) nombreCompleto += " (" + prod.getColor() + ")";
-
-            fila.put("nombre", nombreCompleto);
-            fila.put("cantidadActual", cantidadActual);
-            fila.put("stockMinimo", stockMinimo);
-
-            listaTabla.add(fila);
-        }
+        return "bodeguero/panel_bodeguero";
     }
 
-    model.addAttribute("nombre", getUsuarioActual().getNombre());
-    model.addAttribute("totalProductos", totalProductos);
-    model.addAttribute("totalStockBajo", totalStockBajo);
-    model.addAttribute("totalAgotados", totalAgotados);
-    model.addAttribute("totalInventario", inventarios.size());
-    model.addAttribute("listaTabla", listaTabla);
-
-    return "bodeguero/panel_bodeguero";
-}
     // ===== INVENTARIO =====
     @GetMapping("/inventario")
     public String inventario(Model model) {
@@ -226,13 +228,27 @@ public String panel(Model model) {
             Model model) {
 
         Usuario usuario = getUsuarioActual();
-        if (!correo.isEmpty()) usuario.setCorreo(correo);
         if (!telefono.isEmpty()) usuario.setTelefono(telefono);
         if (!direccion.isEmpty()) usuario.setDireccion(direccion);
         if (password != null && !password.isEmpty()) {
             usuario.setContrasena(passwordEncoder.encode(password));
         }
-        usuarioRepository.save(usuario);
+
+        // Si el correo cambia, actualizamos la autenticación de Spring Security
+        if (!correo.isEmpty() && !correo.equals(usuario.getCorreo())) {
+            usuario.setCorreo(correo);
+            usuarioRepository.save(usuario);
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            Authentication newAuth = new UsernamePasswordAuthenticationToken(
+                    correo,
+                    auth.getCredentials(),
+                    auth.getAuthorities()
+            );
+            SecurityContextHolder.getContext().setAuthentication(newAuth);
+        } else {
+            usuarioRepository.save(usuario);
+        }
 
         model.addAttribute("usuario", usuario);
         model.addAttribute("nombre", usuario.getNombre());

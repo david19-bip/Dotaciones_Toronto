@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -195,7 +196,6 @@ public class ClienteController {
                     d.getId(), pedidoRef, productoNombre, d.getMotivo(), d.getFechaDevolucion(), d.getEstado()));
         }
 
-        // Solo pedidos ya entregados pueden tener una devolución solicitada
         List<Pedido> pedidosEntregados =
                 pedidoRepository.findByIdUsuarioAndEstado(usuario.getId(), "Entregado");
 
@@ -206,7 +206,6 @@ public class ClienteController {
         return "cliente/devoluciones_cliente";
     }
 
-    // Devuelve los productos de un pedido entregado, con la cantidad aún disponible para devolver
     @GetMapping("/devoluciones/productos/{idPedido}")
     @ResponseBody
     public List<Map<String, Object>> productosDePedido(@PathVariable Long idPedido) {
@@ -324,16 +323,17 @@ public class ClienteController {
             Model model) {
 
         Usuario usuario = getUsuarioActual();
+        boolean correoCambio = correo != null && !correo.isEmpty() && !correo.equals(usuario.getCorreo());
 
-        if (!correo.isEmpty()) {
+        if (correo != null && !correo.isEmpty()) {
             usuario.setCorreo(correo);
         }
 
-        if (!telefono.isEmpty()) {
+        if (telefono != null && !telefono.isEmpty()) {
             usuario.setTelefono(telefono);
         }
 
-        if (!direccion.isEmpty()) {
+        if (direccion != null && !direccion.isEmpty()) {
             usuario.setDireccion(direccion);
         }
 
@@ -342,6 +342,17 @@ public class ClienteController {
         }
 
         usuarioRepository.save(usuario);
+
+        // Actualizar la sesión de Spring Security si el correo cambió
+        if (correoCambio) {
+            Authentication authActual = SecurityContextHolder.getContext().getAuthentication();
+            Authentication nuevaAuth = new UsernamePasswordAuthenticationToken(
+                    usuario.getCorreo(),
+                    authActual.getCredentials(),
+                    authActual.getAuthorities()
+            );
+            SecurityContextHolder.getContext().setAuthentication(nuevaAuth);
+        }
 
         model.addAttribute("usuario", usuario);
         model.addAttribute("nombre", usuario.getNombre());
