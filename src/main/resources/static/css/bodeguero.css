@@ -22,6 +22,34 @@ body {
 .sidebar-brand {
   color: #4ade80;
   border-bottom: 1px solid rgba(74, 222, 128, 0.3);
+  text-align: center;
+  padding: 10px 0 25px 0;
+  margin-bottom: 16px;
+}
+
+/* ===== LOGO Y TÍTULO (ESTILO VENDEDOR ADAPTADO A VERDE) ===== */
+.brand-logo {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto 10px;
+    filter: drop-shadow(0 4px 12px rgba(74, 222, 128, 0.35));
+    transition: transform 0.3s ease;
+}
+
+.brand-logo:hover {
+    transform: scale(1.05) rotate(-2deg);
+}
+
+.brand-title {
+    background: linear-gradient(135deg, #4ade80, #16a34a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    text-align: center;
 }
 
 .sidebar a {
@@ -81,9 +109,6 @@ body {
 .bg-primary {
   background-color: rgba(22, 163, 74, var(--bs-bg-opacity, 1)) !important;
 }
-
-/* Nota: dejamos bg-danger / text-danger sin cambios en la tarjeta
-   de "Stock Bajo" para que la alerta siga siendo visualmente distinta */
 
 /* ===== FOCO DE FORMULARIOS EN VERDE ===== */
 .form-control:focus,

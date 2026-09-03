@@ -51,9 +51,19 @@
         </div>
 
         <form th:action="@{/logout}" method="post" class="logout-form">
-            <button type="submit" class="logout-btn">
-                <i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión
-            </button>
+        <button
+          type="submit"
+          style="
+            background: none;
+            border: none;
+            color: #f87171;
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0;
+          "
+        >
+          <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+        </button>
         </form>
     </div>
 

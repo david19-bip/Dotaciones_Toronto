@@ -18,7 +18,7 @@
 </head>
 <body>
 
-        <!-- LOADER -->
+    <!-- LOADER -->
     <div id="loader-overlay">
         <div class="loader-box">
             <div class="loader-logo-wrapper">
@@ -28,29 +28,17 @@
             <div class="loader-text">Cargando...</div>
         </div>
     </div>
+
     <!-- Sidebar -->
     <div class="sidebar">
-      <div class="sidebar-brand" style="text-align: center; padding: 15px 0">
-        <img
-          th:src="@{/images/logo blanco.png}"
-          alt="Logo Dotaciones Toronto"
-          style="
-            width: 200px;
-            height: 200px;
-            object-fit: contain;
-            display: block;
-            margin: 0 auto 5px;
-          "
-        />
-
-        <div style="color: #f5c451; font-weight: 700; font-size: 0.9rem">
-          Dotaciones Toronto
-        </div>
+      <div class="sidebar-brand">
+        <img th:src="@{/images/logo blanco.png}" alt="Logo Dotaciones Toronto" class="brand-logo" />
+        <div class="brand-title">Dotaciones Toronto</div>
       </div>
       <a href="/bodeguero/panel"><i class="bi bi-house"></i> Inicio</a>
       <a href="/bodeguero/perfil" class="active"><i class="bi bi-person"></i> Perfil</a>
       <a href="/bodeguero/inventario"><i class="bi bi-archive"></i> Inventario</a>
-      <formth:action="@{/logout}"method="post"tyle="padding: 10px 20px; margin-top: 10px">
+      <form th:action="@{/logout}" method="post" style="padding: 10px 20px; margin-top: 10px">
         <button
           type="submit"
           style="

@@ -14,18 +14,10 @@ import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.VentaRepository;
-import com.dotacionestoronto.dotacionestoronto.service.UsuarioService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -63,12 +55,6 @@ public class VendedorController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private UsuarioService usuarioService;
-
-    private final SecurityContextRepository securityContextRepository =
-            new HttpSessionSecurityContextRepository();
-
     private Usuario getUsuarioActual() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return usuarioRepository.findByCorreo(auth.getName());
@@ -83,6 +69,24 @@ public class VendedorController {
         Usuario usuario = getUsuarioActual();
 
         model.addAttribute("nombre", usuario.getNombre());
+
+        // Pedidos pendientes (no ocultos)
+        long pedidosPendientes = pedidoRepository.countByEstadoAndOcultoFalse("Pendiente");
+
+        // Ventas realizadas en el mes actual
+        LocalDateTime ahora = LocalDateTime.now();
+        long ventasDelMes = ventaRepository.findAllByOrderByFechaVentaDesc().stream()
+                .filter(v -> v.getFechaVenta() != null
+                        && v.getFechaVenta().getMonthValue() == ahora.getMonthValue()
+                        && v.getFechaVenta().getYear() == ahora.getYear())
+                .count();
+
+        // Devoluciones pendientes por revisar
+        long devolucionesPendientes = devolucionRepository.findByEstado("Pendiente").size();
+
+        model.addAttribute("pedidosPendientes", pedidosPendientes);
+        model.addAttribute("ventasDelMes", ventasDelMes);
+        model.addAttribute("devolucionesPendientes", devolucionesPendientes);
 
         return "vendedor/panel_vendedor";
     }
@@ -363,16 +367,12 @@ public class VendedorController {
             @RequestParam(required = false) String telefono,
             @RequestParam(required = false) String direccion,
             @RequestParam(required = false) String password,
-            Model model,
-            HttpServletRequest request,
-            HttpServletResponse response) {
+            Model model) {
 
         Usuario usuario = getUsuarioActual();
-        boolean correoCambio = false;
 
-        if (correo != null && !correo.isEmpty() && !correo.equals(usuario.getCorreo())) {
+        if (correo != null && !correo.isEmpty()) {
             usuario.setCorreo(correo);
-            correoCambio = true;
         }
 
         if (telefono != null && !telefono.isEmpty()) {
@@ -390,28 +390,6 @@ public class VendedorController {
         }
 
         usuarioRepository.save(usuario);
-
-        // Si el correo cambió, el "username" que Spring Security tiene guardado
-        // en la sesión (auth.getName()) queda desactualizado. Hay que
-        // re-autenticar la sesión actual con el nuevo correo para que
-        // getUsuarioActual() lo siga encontrando en las siguientes peticiones.
-        if (correoCambio) {
-            UserDetails userDetails = usuarioService.loadUserByUsername(usuario.getCorreo());
-
-            UsernamePasswordAuthenticationToken nuevaAuth =
-                    new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            userDetails.getPassword(),
-                            userDetails.getAuthorities()
-                    );
-
-            SecurityContext nuevoContexto = SecurityContextHolder.createEmptyContext();
-            nuevoContexto.setAuthentication(nuevaAuth);
-            SecurityContextHolder.setContext(nuevoContexto);
-
-            // Persistir el nuevo contexto en la sesión HTTP
-            securityContextRepository.saveContext(nuevoContexto, request, response);
-        }
 
         model.addAttribute("usuario", usuario);
         model.addAttribute("nombre", usuario.getNombre());
