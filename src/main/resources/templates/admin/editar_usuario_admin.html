@@ -59,43 +59,37 @@
         <!-- Tarjeta del Formulario -->
         <div class="card border-0 shadow-sm rounded-4" style="max-width: 800px;">
             <div class="card-body p-4">
-                <form th:action="@{/admin/usuarios/actualizar}" method="post" th:object="${usuario}">
+                <form th:action="@{/admin/usuarios/actualizar}" method="post" th:object="${usuario}" id="formEditarUsuario" novalidate>
                     <input type="hidden" name="idUsuario" th:value="*{id}">
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small text-secondary">Nombre Completo</label>
-                        <input type="text" name="nombre" class="form-control" th:value="*{nombre}" required>
-                    </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold small text-secondary">Documento</label>
-                            <input type="text" name="documento" class="form-control" th:value="*{documento}" pattern="[0-9]+" required>
+                            <label class="form-label fw-semibold small text-secondary">Teléfono</label>
+                            <input type="text" name="telefono" id="editTelefono" class="form-control" th:value="*{telefono}" pattern="[0-9]+" minlength="7" maxlength="15" required>
+                            <div class="invalid-feedback">Entre 7 y 15 dígitos.</div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold small text-secondary">Teléfono</label>
-                            <input type="text" name="telefono" class="form-control" th:value="*{telefono}" pattern="[0-9]+" required>
+                            <label class="form-label fw-semibold small text-secondary">Correo Electrónico</label>
+                            <input type="email" name="correo" id="editCorreo" class="form-control" th:value="*{correo}" required>
+                            <div class="invalid-feedback">Ingrese un correo válido.</div>
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small text-secondary">Correo Electrónico</label>
-                        <input type="email" name="correo" class="form-control" th:value="*{correo}" required>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label fw-semibold small text-secondary">Dirección</label>
-                        <input type="text" name="direccion" class="form-control" th:value="*{direccion}" required>
+                        <input type="text" name="direccion" id="editDireccion" class="form-control" th:value="*{direccion}" minlength="5" required>
+                        <div class="invalid-feedback">Mínimo 5 caracteres.</div>
                     </div>
 
                     <div class="mb-4">
                         <label class="form-label fw-semibold small text-secondary">Rol asignado</label>
-                        <select name="rol" class="form-select" required>
+                        <select name="rol" id="editRol" class="form-select" required>
                             <option value="2" th:selected="*{idRol == 2}">Cliente</option>
                             <option value="3" th:selected="*{idRol == 3}">Vendedor</option>
                             <option value="4" th:selected="*{idRol == 4}">Bodeguero</option>
                             <option value="1" th:selected="*{idRol == 1}">Administrador</option>
                         </select>
+                        <div class="invalid-feedback">Seleccione un rol.</div>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2">
@@ -111,5 +105,44 @@
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script de Validaciones en Tiempo Real -->
+    <script>
+        document.getElementById('editTelefono').addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            validarCampo(this);
+        });
+        document.getElementById('editCorreo').addEventListener('input', function() {
+            validarCampo(this);
+        });
+        document.getElementById('editDireccion').addEventListener('input', function() {
+            validarCampo(this);
+        });
+        document.getElementById('editRol').addEventListener('change', function() {
+            validarCampo(this);
+        });
+
+        function validarCampo(campo) {
+            if (campo.checkValidity()) {
+                campo.classList.remove('is-invalid');
+                campo.classList.add('is-valid');
+            } else {
+                campo.classList.remove('is-valid');
+                campo.classList.add('is-invalid');
+            }
+        }
+
+        document.getElementById('formEditarUsuario').addEventListener('submit', function(e) {
+            let valido = true;
+            this.querySelectorAll('input, select').forEach(function(campo) {
+                validarCampo(campo);
+                if (!campo.checkValidity()) valido = false;
+            });
+            if (!valido) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        });
+    </script>
 </body>
 </html>

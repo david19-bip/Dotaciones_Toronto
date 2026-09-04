@@ -185,8 +185,6 @@ public class AdminController {
     @PostMapping("/usuarios/actualizar")
     public String actualizarUsuarioAdmin(
             @RequestParam Long idUsuario,
-            @RequestParam String nombre,
-            @RequestParam String documento,
             @RequestParam String correo,
             @RequestParam String telefono,
             @RequestParam String direccion,
@@ -195,8 +193,6 @@ public class AdminController {
 
         Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
         if (usuario != null) {
-            usuario.setNombre(nombre);
-            usuario.setDocumento(documento);
             usuario.setCorreo(correo);
             usuario.setTelefono(telefono);
             usuario.setDireccion(direccion);
