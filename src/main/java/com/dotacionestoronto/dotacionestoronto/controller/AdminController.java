@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
 import com.dotacionestoronto.dotacionestoronto.entity.Inventario;
@@ -36,6 +37,8 @@ import com.dotacionestoronto.dotacionestoronto.repository.InventarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
+import com.dotacionestoronto.dotacionestoronto.service.ReporteProductosExcelService;
+import com.dotacionestoronto.dotacionestoronto.service.ReporteProductosService;
 import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosExcelService;
 import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosService;
 
@@ -66,6 +69,12 @@ public class AdminController {
 
     @Autowired
     private ReporteUsuariosExcelService reporteUsuariosExcelService;
+
+    @Autowired
+    private ReporteProductosService reporteProductosService;
+
+    @Autowired
+    private ReporteProductosExcelService reporteProductosExcelService;
 
     private Usuario getUsuarioActual() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -239,6 +248,42 @@ public class AdminController {
         return "redirect:/admin/productos";
     }
 
+    @PostMapping("/productos/actualizar")
+    public String actualizarProducto(
+            @RequestParam Long idProducto,
+            @RequestParam String nombre,
+            @RequestParam BigDecimal precio,
+            @RequestParam String talla,
+            @RequestParam String color,
+            @RequestParam(required = false) MultipartFile imagen,
+            RedirectAttributes redirectAttributes) throws IOException {
+
+        Producto producto = productoRepository.findById(idProducto).orElse(null);
+
+        if (producto == null) {
+            redirectAttributes.addFlashAttribute("error", "No se encontró el producto a actualizar.");
+            return "redirect:/admin/productos";
+        }
+
+        producto.setNombre(nombre);
+        producto.setPrecio(precio);
+        producto.setTalla(talla);
+        producto.setColor(color);
+
+        if (imagen != null && !imagen.isEmpty()) {
+            String nombreArchivo = System.currentTimeMillis() + "_" + imagen.getOriginalFilename();
+            Path ruta = Paths.get("uploads/productos/" + nombreArchivo);
+            Files.createDirectories(ruta.getParent());
+            Files.write(ruta, imagen.getBytes());
+            producto.setImagen("images/productos/" + nombreArchivo);
+        }
+
+        productoRepository.save(producto);
+
+        redirectAttributes.addFlashAttribute("exito", "Producto actualizado correctamente.");
+        return "redirect:/admin/productos";
+    }
+
     @PostMapping("/productos/toggleEstado")
     public String toggleEstadoProducto(@RequestParam Long idProducto) {
         Producto producto = productoRepository.findById(idProducto).orElse(null);
@@ -253,6 +298,37 @@ public class AdminController {
     public String eliminarProducto(@RequestParam Long idProducto) {
         productoRepository.deleteById(idProducto);
         return "redirect:/admin/productos";
+    }
+
+    @GetMapping("/productos/reporte")
+    public ResponseEntity<byte[]> reporteProductos() {
+        List<Producto> productos = productoRepository.findAll();
+        byte[] pdf = reporteProductosService.generarReporte(productos);
+
+        String nombreArchivo = "reporte-productos-" +
+                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".pdf";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(ContentDisposition.inline().filename(nombreArchivo).build());
+
+        return ResponseEntity.ok().headers(headers).body(pdf);
+    }
+
+    @GetMapping("/productos/reporte/excel")
+    public ResponseEntity<byte[]> reporteProductosExcel() {
+        List<Producto> productos = productoRepository.findAll();
+        byte[] excel = reporteProductosExcelService.generarReporte(productos);
+
+        String nombreArchivo = "reporte-productos-" +
+                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(nombreArchivo).build());
+
+        return ResponseEntity.ok().headers(headers).body(excel);
     }
 
     // ===== INVENTARIO =====
