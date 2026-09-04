@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedidos - Dotaciones Toronto</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link th:href="@{/css/vendedor.css}" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <img th:src="@{/images/logo blanco.png}" alt="Logo Dotaciones Toronto" class="brand-logo">
+            <div class="brand-title">DOTACIONES TORONTO</div>
+        </div>
+        <a href="/vendedor/panel"><i class="bi bi-house"></i> Inicio</a>
+        <a href="/vendedor/perfil"><i class="bi bi-person"></i> Perfil</a>
+        <a href="/vendedor/pedidos" class="active"><i class="bi bi-bag"></i> Pedidos</a>
+        <a href="/vendedor/ventas"><i class="bi bi-graph-up"></i> Ventas</a>
+        <a href="/vendedor/devoluciones"><i class="bi bi-arrow-return-left"></i> Devoluciones</a>
+        
+        <form th:action="@{/logout}" method="post" style="padding: 10px 20px; margin-top: 10px;">
+            <button type="submit" style="background:none; border:none; color:#f87171; cursor:pointer; font-size:0.9rem; padding:0;">
+                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+            </button>
+        </form>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="main-content">
+        <h4 class="fw-bold text-dark mb-1">Gestión de Pedidos</h4>
+        <p class="text-muted mb-4">Bienvenido, <span th:text="${nombre}"></span></p>
+
+        <!-- Filtros -->
+        <div class="d-flex gap-2 mb-3 flex-wrap">
+            <a href="/vendedor/pedidos"
+               th:class="${estadoActivo == null or estadoActivo.isEmpty()} ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-primary'">Todos</a>
+            <a href="/vendedor/pedidos?estado=Pendiente"
+               th:class="${estadoActivo == 'Pendiente'} ? 'btn btn-sm btn-warning text-dark' : 'btn btn-sm btn-outline-warning'">Pendientes</a>
+            <a href="/vendedor/pedidos?estado=Enviado"
+               th:class="${estadoActivo == 'Enviado'} ? 'btn btn-sm btn-info text-dark' : 'btn btn-sm btn-outline-info'">Enviados</a>
+            <a href="/vendedor/pedidos?estado=Entregado"
+               th:class="${estadoActivo == 'Entregado'} ? 'btn btn-sm btn-success' : 'btn btn-sm btn-outline-success'">Entregados</a>
+            <a href="/vendedor/pedidos?estado=Cancelado"
+               th:class="${estadoActivo == 'Cancelado'} ? 'btn btn-sm btn-danger' : 'btn btn-sm btn-outline-danger'">Cancelados</a>
+        </div>
+
+        <!-- Tabla de pedidos -->
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead style="background-color:#1E293B; color:#F8FAFC;">
+                        <tr>
+                            <th class="p-3"># Pedido</th>
+                            <th class="p-3">Cliente</th>
+                            <th class="p-3">Fecha</th>
+                            <th class="p-3">Estado</th>
+                            <th class="p-3">Acción</th>
+                            <th class="p-3">Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(pedidos)}">
+                            <td colspan="6" class="text-center p-4 text-muted">
+                                No hay pedidos <span th:if="${estadoActivo != null and !estadoActivo.isEmpty()}" th:text="'con estado ' + ${estadoActivo}"></span> registrados
+                            </td>
+                        </tr>
+                        <tr th:each="pv : ${pedidos}">
+                            <td class="p-3 fw-bold">#<span th:text="${pv.pedido.id}"></span></td>
+                            <td class="p-3" th:text="${pv.clienteNombre != null ? pv.clienteNombre : pv.pedido.idUsuario}"></td>
+                            <td class="p-3" th:text="${#temporals.format(pv.pedido.fechaPedido, 'dd/MM/yyyy HH:mm')}"></td>
+                            <td class="p-3">
+                                <span th:class="${'badge ' + 
+                                    (pv.pedido.estado == 'Pendiente' ? 'bg-warning text-dark' : 
+                                    (pv.pedido.estado == 'Enviado' ? 'bg-info' : 
+                                    (pv.pedido.estado == 'Entregado' ? 'bg-success' : 'bg-danger')))}"
+                                    th:text="${pv.pedido.estado}">
+                                </span>
+                            </td>
+                            <td class="p-3">
+                                <form th:action="@{/vendedor/pedidos/cambiarEstado}" method="post" class="d-flex gap-2">
+                                    <input type="hidden" name="idPedido" th:value="${pv.pedido.id}">
+                                    <select name="estado" class="form-select form-select-sm" style="width:140px;">
+                                        <option value="Pendiente" th:selected="${pv.pedido.estado == 'Pendiente'}">Pendiente</option>
+                                        <option value="Enviado" th:selected="${pv.pedido.estado == 'Enviado'}">Enviado</option>
+                                        <option value="Entregado" th:selected="${pv.pedido.estado == 'Entregado'}">Entregado</option>
+                                        <option value="Cancelado" th:selected="${pv.pedido.estado == 'Cancelado'}">Cancelado</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-check"></i>
+                                    </button>
+                                </form>
+                            </td>
+                            <td class="p-3">
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                        data-bs-toggle="modal"
+                                        th:data-bs-target="'#detallePedido' + ${pv.pedido.id}">
+                                    <i class="bi bi-eye"></i> Ver detalles
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Modales de detalle -->
+        <div th:each="pv : ${pedidos}">
+            <div class="modal fade" th:id="'detallePedido' + ${pv.pedido.id}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content" style="border-radius: 16px; border: none;">
+                        <div class="modal-header" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color:#fff; border-radius: 16px 16px 0 0;">
+                            <h5 class="modal-title fw-bold">
+                                <i class="bi bi-bag-check me-2"></i>Detalle de Pedido #<span th:text="${pv.pedido.id}"></span>
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4">
+
+                            <!-- Datos del cliente -->
+                            <h6 class="fw-bold text-muted mb-2"><i class="bi bi-person-circle me-1"></i>Cliente</h6>
+                            <div class="row mb-4">
+                                <div class="col-md-6 mb-2">
+                                    <div class="small text-muted">Nombre</div>
+                                    <div class="fw-semibold" th:text="${pv.clienteNombre != null ? pv.clienteNombre : 'No disponible'}"></div>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <div class="small text-muted">Correo</div>
+                                    <div class="fw-semibold" th:text="${pv.clienteCorreo != null ? pv.clienteCorreo : 'No disponible'}"></div>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <div class="small text-muted">Teléfono</div>
+                                    <div class="fw-semibold" th:text="${pv.clienteTelefono != null ? pv.clienteTelefono : 'No disponible'}"></div>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <div class="small text-muted">Dirección</div>
+                                    <div class="fw-semibold" th:text="${pv.clienteDireccion != null ? pv.clienteDireccion : 'No disponible'}"></div>
+                                </div>
+                            </div>
+
+                            <!-- Estado del pedido -->
+                            <h6 class="fw-bold text-muted mb-2"><i class="bi bi-info-circle me-1"></i>Estado del pedido</h6>
+                            <div class="row mb-4">
+                                <div class="col-md-6 mb-2">
+                                    <div class="small text-muted">Fecha</div>
+                                    <div class="fw-semibold" th:text="${#temporals.format(pv.pedido.fechaPedido, 'dd/MM/yyyy HH:mm')}"></div>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <div class="small text-muted">Estado actual</div>
+                                    <span th:class="${'badge ' + 
+                                        (pv.pedido.estado == 'Pendiente' ? 'bg-warning text-dark' : 
+                                        (pv.pedido.estado == 'Enviado' ? 'bg-info' : 
+                                        (pv.pedido.estado == 'Entregado' ? 'bg-success' : 'bg-danger')))}"
+                                        th:text="${pv.pedido.estado}">
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Productos -->
+                            <h6 class="fw-bold text-muted mb-2"><i class="bi bi-box-seam me-1"></i>Productos</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle">
+                                    <thead>
+                                        <tr class="text-muted small">
+                                            <th>Producto</th>
+                                            <th>Talla</th>
+                                            <th>Color</th>
+                                            <th>Cant.</th>
+                                            <th>P. Unitario</th>
+                                            <th>Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:if="${#lists.isEmpty(pv.items)}">
+                                            <td colspan="6" class="text-center text-muted">Sin productos registrados</td>
+                                        </tr>
+                                        <tr th:each="item : ${pv.items}">
+                                            <td th:text="${item.nombreProducto != null ? item.nombreProducto : 'Producto eliminado'}"></td>
+                                            <td th:text="${item.talla != null ? item.talla : '-'}"></td>
+                                            <td th:text="${item.color != null ? item.color : '-'}"></td>
+                                            <td th:text="${item.cantidad}"></td>
+                                            <td>$<span th:text="${#numbers.formatDecimal(item.precioUnitario, 1, 'COMMA', 0, 'POINT')}"></span></td>
+                                            <td class="fw-semibold">$<span th:text="${#numbers.formatDecimal(item.subtotal, 1, 'COMMA', 0, 'POINT')}"></span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="text-end mt-3 pt-3 border-top">
+                                <span class="text-muted me-2">Total del pedido:</span>
+                                <span class="fs-5 fw-bold text-success">$<span th:text="${#numbers.formatDecimal(pv.total, 1, 'COMMA', 0, 'POINT')}"></span></span>
+                            </div>
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

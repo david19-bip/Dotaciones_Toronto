@@ -1,0 +1,343 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+    <title>Productos - Dotaciones Toronto</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <link th:href="@{/css/cliente.css}" rel="stylesheet" />
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-brand" style="text-align: center; padding: 15px 0">
+        <img
+          th:src="@{/images/logo blanco.png}"
+          alt="Logo Dotaciones Toronto"
+          style="
+            width: 140px;
+            height: 140px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto 5px;
+          "
+        />
+        <div style="color: #fa813b; font-weight: 700; font-size: 0.9rem">
+          Dotaciones Toronto
+        </div>
+      </div>
+      <a href="/cliente/panel"><i class="bi bi-grid-1x2-fill"></i> Inicio</a>
+      <a href="/cliente/perfil"
+        ><i class="bi bi-person-bounding-box"></i> Perfil</a
+      >
+      <a href="/cliente/productos" class="active"
+        ><i class="bi bi-bag-check-fill"></i> Productos</a
+      >
+      <a href="/cliente/pedidos"
+        ><i class="bi bi-receipt-cutoff"></i> Pedidos</a
+      >
+      <a href="/cliente/devoluciones"
+        ><i class="bi bi-arrow-counterclockwise"></i> Devoluciones</a
+      >
+      <form th:action="@{/logout}" method="post" class="mt-auto">
+        <button type="submit" class="logout-btn">
+          <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+        </button>
+      </form>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="main-content">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <div>
+          <h4 class="fw-bold mb-1">Catálogo de productos</h4>
+          <p class="text-muted mb-0">
+            Explora las dotaciones disponibles y arma tu pedido,
+            <span th:text="${nombre}"></span>
+          </p>
+        </div>
+        <button
+          class="btn btn-toronto carrito-btn"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#offcanvasCarrito"
+        >
+          <i class="bi bi-cart3"></i> Carrito
+          <span class="carrito-badge" id="carritoBadge">0</span>
+        </button>
+      </div>
+
+      <div
+        th:if="${exito}"
+        class="alert alert-success p-2 fs-6 mt-3"
+        th:text="${exito}"
+      ></div>
+      <div
+        th:if="${error}"
+        class="alert alert-danger p-2 fs-6 mt-3"
+        th:text="${error}"
+      ></div>
+
+      <div class="row g-3 mb-4 mt-2">
+        <div class="col-md-10">
+          <input
+            type="text"
+            class="form-control"
+            id="filtroTexto"
+            placeholder="Buscar producto..."
+            oninput="filtrarProductos()"
+          />
+        </div>
+        <div class="col-md-2">
+          <button
+            class="btn btn-toronto w-100"
+            type="button"
+            onclick="filtrarProductos()"
+          >
+            <i class="bi bi-search"></i> Buscar
+          </button>
+        </div>
+      </div>
+
+      <div class="row g-4" id="listaProductos">
+        <div
+          class="col-md-3 producto-item"
+          th:each="producto : ${productos}"
+          th:attr="data-nombre=${#strings.toLowerCase(producto.nombre)}"
+        >
+          <div class="producto-card">
+            <div class="producto-img">
+              <img
+                th:if="${producto.imagen != null and !producto.imagen.isEmpty()}"
+                th:src="@{'/' + ${producto.imagen}}"
+                alt="Producto"
+                style="width: 100%; height: 100%; object-fit: cover"
+              />
+              <i
+                th:unless="${producto.imagen != null and !producto.imagen.isEmpty()}"
+                class="bi bi-tshirt"
+              ></i>
+            </div>
+            <div class="p-3">
+              <h6 class="fw-bold mb-1" th:text="${producto.nombre}"></h6>
+              <p class="text-muted small mb-2">
+                <span
+                  th:if="${producto.talla != null}"
+                  th:text="'Talla ' + ${producto.talla}"
+                ></span>
+                <span
+                  th:if="${producto.color != null}"
+                  th:text="' · ' + ${producto.color}"
+                ></span>
+              </p>
+              <div class="d-flex justify-content-between align-items-center">
+                <span
+                  class="fw-bold"
+                  th:text="'$ ' + ${#numbers.formatDecimal(producto.precio, 0, 'POINT', 0, 'NONE')}"
+                ></span>
+                <button
+                  class="btn btn-toronto btn-sm"
+                  th:if="${producto.estado == null or !producto.estado.equalsIgnoreCase('Agotado')}"
+                  th:attr="data-id=${producto.id}"
+                  onclick="agregarAlCarrito(this)"
+                >
+                  <i class="bi bi-cart-plus"></i> Agregar
+                </button>
+                <span
+                  class="badge-estado badge-cancelado"
+                  th:if="${producto.estado != null and producto.estado.equalsIgnoreCase('Agotado')}"
+                  >Agotado</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="col-12 text-center text-muted py-5"
+          th:if="${#lists.isEmpty(productos)}"
+        >
+          No hay productos disponibles por el momento.
+        </div>
+      </div>
+    </div>
+
+    <!-- Offcanvas del carrito -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasCarrito">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title fw-bold">
+          <i class="bi bi-cart3 me-2"></i>Mi carrito
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="offcanvas"
+        ></button>
+      </div>
+      <div class="offcanvas-body d-flex flex-column">
+        <div id="carritoVacio" class="text-center text-muted py-5">
+          <i class="bi bi-cart-x" style="font-size: 2rem"></i>
+          <p class="mt-2 mb-0">Tu carrito está vacío</p>
+        </div>
+        <div id="carritoItems"></div>
+
+        <div
+          class="mt-auto pt-3 border-top"
+          id="carritoFooter"
+          style="display: none"
+        >
+          <div class="d-flex justify-content-between fw-bold mb-3">
+            <span>Total</span>
+            <span id="carritoTotal">$ 0</span>
+          </div>
+          <form th:action="@{/cliente/carrito/finalizar}" method="post">
+            <button type="submit" class="btn btn-toronto w-100 fw-semibold">
+              <i class="bi bi-bag-check me-1"></i> Hacer pedido
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+      const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+      const csrfHeader = document.querySelector(
+        'meta[name="_csrf_header"]',
+      ).content;
+
+      function formatoMoneda(valor) {
+        return (
+          "$ " +
+          Number(valor).toLocaleString("es-CO", { maximumFractionDigits: 0 })
+        );
+      }
+
+      async function llamarCarrito(url, params) {
+        const body = new URLSearchParams(params);
+        const headers = { "Content-Type": "application/x-www-form-urlencoded" };
+        headers[csrfHeader] = csrfToken;
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: headers,
+          body: body,
+        });
+        if (!resp.ok) throw new Error("Error al comunicarse con el carrito");
+        return resp.json();
+      }
+
+      async function cargarCarrito() {
+        const headers = {};
+        headers[csrfHeader] = csrfToken;
+        const resp = await fetch("/cliente/carrito", { headers: headers });
+        const data = await resp.json();
+        pintarCarrito(data);
+      }
+
+      function pintarCarrito(data) {
+        document.getElementById("carritoBadge").textContent =
+          data.totalUnidades;
+        const cont = document.getElementById("carritoItems");
+        const vacio = document.getElementById("carritoVacio");
+        const footer = document.getElementById("carritoFooter");
+
+        if (!data.items || data.items.length === 0) {
+          cont.innerHTML = "";
+          vacio.style.display = "block";
+          footer.style.display = "none";
+          return;
+        }
+
+        vacio.style.display = "none";
+        footer.style.display = "block";
+        document.getElementById("carritoTotal").textContent = formatoMoneda(
+          data.total,
+        );
+
+        cont.innerHTML = data.items
+          .map(
+            (item) => `
+                <div class="carrito-item">
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-semibold">${item.nombre}</span>
+                        <button class="btn btn-sm btn-link text-danger p-0" onclick="eliminarItem(${item.idDetalle})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <div class="qty-control">
+                            <button onclick="cambiarCantidad(${item.idDetalle}, ${item.cantidad - 1})">-</button>
+                            <span>${item.cantidad}</span>
+                            <button onclick="cambiarCantidad(${item.idDetalle}, ${item.cantidad + 1})">+</button>
+                        </div>
+                        <span class="text-muted small">${formatoMoneda(item.subtotal)}</span>
+                    </div>
+                </div>
+            `,
+          )
+          .join("");
+      }
+
+      async function agregarAlCarrito(btn) {
+        const idProducto = btn.getAttribute("data-id");
+        try {
+          const data = await llamarCarrito("/cliente/carrito/agregar", {
+            idProducto: idProducto,
+            cantidad: 1,
+          });
+          pintarCarrito(data);
+          const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(
+            document.getElementById("offcanvasCarrito"),
+          );
+          offcanvas.show();
+        } catch (e) {
+          alert("No se pudo agregar el producto al carrito.");
+        }
+      }
+
+      async function cambiarCantidad(idDetalle, nuevaCantidad) {
+        try {
+          const data = await llamarCarrito("/cliente/carrito/actualizar", {
+            idDetalle: idDetalle,
+            cantidad: nuevaCantidad,
+          });
+          pintarCarrito(data);
+        } catch (e) {
+          alert("No se pudo actualizar la cantidad.");
+        }
+      }
+
+      async function eliminarItem(idDetalle) {
+        try {
+          const data = await llamarCarrito("/cliente/carrito/eliminar", {
+            idDetalle: idDetalle,
+          });
+          pintarCarrito(data);
+        } catch (e) {
+          alert("No se pudo eliminar el producto.");
+        }
+      }
+
+      function filtrarProductos() {
+        const texto = document
+          .getElementById("filtroTexto")
+          .value.toLowerCase()
+          .trim();
+        document.querySelectorAll(".producto-item").forEach((card) => {
+          const nombre = card.getAttribute("data-nombre") || "";
+          card.style.display = nombre.includes(texto) ? "" : "none";
+        });
+      }
+
+      cargarCarrito();
+    </script>
+  </body>
+</html>

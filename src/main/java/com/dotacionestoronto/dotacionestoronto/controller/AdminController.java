@@ -1,0 +1,423 @@
+package com.dotacionestoronto.dotacionestoronto.controller;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
+import com.dotacionestoronto.dotacionestoronto.entity.Inventario;
+import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
+import com.dotacionestoronto.dotacionestoronto.entity.Producto;
+import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
+import com.dotacionestoronto.dotacionestoronto.repository.DevolucionRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.InventarioRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
+import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosExcelService;
+import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosService;
+
+/**
+ * Controlador del panel de administracion: gestion integral de usuarios,
+ * productos, inventario, pedidos y devoluciones, ademas de reportes de
+ * usuarios en PDF y Excel, y el perfil propio del administrador.
+ */
+@Controller
+@RequestMapping("/admin")
+public class AdminController {
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private PedidoRepository pedidoRepository;
+
+    @Autowired
+    private DevolucionRepository devolucionRepository;
+
+    @Autowired
+    private ProductoRepository productoRepository;
+
+    @Autowired
+    private InventarioRepository inventarioRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ReporteUsuariosService reporteUsuariosService;
+
+    @Autowired
+    private ReporteUsuariosExcelService reporteUsuariosExcelService;
+
+    /** Obtiene el {@link Usuario} actualmente autenticado a partir del contexto de seguridad. */
+    private Usuario getUsuarioActual() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return usuarioRepository.findByCorreo(auth.getName());
+    }
+
+    // ===== PANEL =====
+    /** Panel principal del administrador, con indicadores generales del sistema. */
+    @GetMapping("/panel")
+    public String panel(Model model) {
+        model.addAttribute("nombre", getUsuarioActual().getNombre());
+        model.addAttribute("totalUsuarios", usuarioRepository.count());
+        model.addAttribute("totalPedidos", pedidoRepository.count());
+        model.addAttribute("totalDevoluciones", devolucionRepository.count());
+        model.addAttribute("totalProductos", productoRepository.count());
+        return "admin/panel_admin";
+    }
+
+    // ===== USUARIOS =====
+    /** Lista los usuarios registrados en el sistema. */
+    @GetMapping("/usuarios")
+    public String usuarios(Model model) {
+        model.addAttribute("usuarios", usuarioRepository.findAll());
+        model.addAttribute("nombre", getUsuarioActual().getNombre());
+        return "admin/usuarios_admin";
+    }
+
+    /** Crea un nuevo usuario desde el panel de administracion. */
+    @PostMapping("/usuarios/crear")
+    public String crearUsuario(
+            @RequestParam String nombre,
+            @RequestParam String documento,
+            @RequestParam String correo,
+            @RequestParam String telefono,
+            @RequestParam String direccion,
+            @RequestParam String password,
+            @RequestParam Integer rol,
+            Model model) {
+
+        if (usuarioRepository.findByCorreo(correo) != null) {
+            model.addAttribute("error", "Ya existe un usuario con ese correo.");
+            model.addAttribute("usuarios", usuarioRepository.findAll());
+            model.addAttribute("nombre", getUsuarioActual().getNombre());
+            return "admin/usuarios_admin";
+        }
+
+        if (usuarioRepository.findByDocumento(documento) != null) {
+            model.addAttribute("error", "Ya existe un usuario con ese documento.");
+            model.addAttribute("usuarios", usuarioRepository.findAll());
+            model.addAttribute("nombre", getUsuarioActual().getNombre());
+            return "admin/usuarios_admin";
+        }
+
+        Usuario usuario = new Usuario();
+        usuario.setNombre(nombre);
+        usuario.setDocumento(documento);
+        usuario.setCorreo(correo);
+        usuario.setTelefono(telefono);
+        usuario.setDireccion(direccion);
+        usuario.setContrasena(passwordEncoder.encode(password));
+        usuario.setIdRol(rol);
+        usuario.setEstado("Habilitado");
+        usuarioRepository.save(usuario);
+
+        return "redirect:/admin/usuarios";
+    }
+
+    /** Genera y descarga el reporte de usuarios en formato PDF (ver ReporteUsuariosService). */
+    @GetMapping("/usuarios/reporte")
+    public ResponseEntity<byte[]> reporteUsuarios() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+        byte[] pdf = reporteUsuariosService.generarReporte(usuarios);
+
+        String nombreArchivo = "reporte-usuarios-" +
+                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".pdf";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(ContentDisposition.inline().filename(nombreArchivo).build());
+
+        return ResponseEntity.ok().headers(headers).body(pdf);
+    }
+
+    /** Genera y descarga el reporte de usuarios en formato Excel (ver ReporteUsuariosExcelService). */
+    @GetMapping("/usuarios/reporte/excel")
+    public ResponseEntity<byte[]> reporteUsuariosExcel() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+        byte[] excel = reporteUsuariosExcelService.generarReporte(usuarios);
+
+        String nombreArchivo = "reporte-usuarios-" +
+                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(nombreArchivo).build());
+
+        return ResponseEntity.ok().headers(headers).body(excel);
+    }
+
+    /** Habilita o inhabilita a un usuario (un usuario inhabilitado no puede iniciar sesion). */
+    @PostMapping("/usuarios/toggleEstado")
+    public String toggleEstadoUsuario(@RequestParam Long idUsuario) {
+        Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
+        if (usuario != null) {
+            usuario.setEstado(usuario.getEstado().equals("Habilitado") ? "Inhabilitado" : "Habilitado");
+            usuarioRepository.save(usuario);
+        }
+        return "redirect:/admin/usuarios";
+    }
+
+    /** Muestra el formulario de edicion de un usuario existente. */
+    @GetMapping("/usuarios/editar")
+    public String editarUsuarioForm(@RequestParam Long id, Model model) {
+        Usuario usuario = usuarioRepository.findById(id).orElse(null);
+        if (usuario == null) {
+            return "redirect:/admin/usuarios";
+        }
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("nombre", getUsuarioActual().getNombre());
+        return "admin/editar_usuario_admin";
+    }
+
+    /** Guarda los cambios realizados sobre un usuario desde el panel de administracion. */
+    @PostMapping("/usuarios/actualizar")
+    public String actualizarUsuarioAdmin(
+            @RequestParam Long idUsuario,
+            @RequestParam String nombre,
+            @RequestParam String documento,
+            @RequestParam String correo,
+            @RequestParam String telefono,
+            @RequestParam String direccion,
+            @RequestParam Integer rol,
+            Model model) {
+
+        Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
+        if (usuario != null) {
+            usuario.setNombre(nombre);
+            usuario.setDocumento(documento);
+            usuario.setCorreo(correo);
+            usuario.setTelefono(telefono);
+            usuario.setDireccion(direccion);
+            usuario.setIdRol(rol);
+
+            usuarioRepository.save(usuario);
+        }
+        return "redirect:/admin/usuarios";
+    }
+
+    // ===== PRODUCTOS =====
+    /** Lista los productos del catalogo. */
+    @GetMapping("/productos")
+    public String productos(Model model) {
+        model.addAttribute("productos", productoRepository.findAll());
+        model.addAttribute("nombre", getUsuarioActual().getNombre());
+        return "admin/productos_admin";
+    }
+
+    /** Crea un nuevo producto, incluyendo la carga de su imagen. */
+    @PostMapping("/productos/crear")
+    public String crearProducto(
+            @RequestParam String nombre,
+            @RequestParam BigDecimal precio,
+            @RequestParam String talla,
+            @RequestParam String color,
+            @RequestParam(required = false) MultipartFile imagen) throws IOException {
+
+        Producto producto = new Producto();
+        producto.setNombre(nombre);
+        producto.setPrecio(precio);
+        producto.setTalla(talla);
+        producto.setColor(color);
+        producto.setEstado("Disponible");
+        producto.setInhabilitado(false);
+
+        if (imagen != null && !imagen.isEmpty()) {
+            String nombreArchivo = System.currentTimeMillis() + "_" + imagen.getOriginalFilename();
+            Path ruta = Paths.get("uploads/productos/" + nombreArchivo);
+            Files.createDirectories(ruta.getParent());
+            Files.write(ruta, imagen.getBytes());
+            producto.setImagen("images/productos/" + nombreArchivo);
+        }
+
+        productoRepository.save(producto);
+        return "redirect:/admin/productos";
+    }
+
+    /** Habilita o inhabilita un producto (deja de mostrarse en el catalogo del cliente sin eliminarlo). */
+    @PostMapping("/productos/toggleEstado")
+    public String toggleEstadoProducto(@RequestParam Long idProducto) {
+        Producto producto = productoRepository.findById(idProducto).orElse(null);
+        if (producto != null) {
+            producto.setEstado(producto.getEstado().equals("Disponible") ? "Agotado" : "Disponible");
+            productoRepository.save(producto);
+        }
+        return "redirect:/admin/productos";
+    }
+
+    /** Elimina definitivamente un producto. */
+    @PostMapping("/productos/eliminar")
+    public String eliminarProducto(@RequestParam Long idProducto) {
+        productoRepository.deleteById(idProducto);
+        return "redirect:/admin/productos";
+    }
+
+    // ===== INVENTARIO =====
+    /** Lista los registros de inventario. */
+    @GetMapping("/inventario")
+    public String inventario(Model model) {
+        model.addAttribute("inventarios", inventarioRepository.findAll());
+        model.addAttribute("productos", productoRepository.findAll());
+        model.addAttribute("nombre", getUsuarioActual().getNombre());
+        return "admin/inventario_admin";
+    }
+
+    /** Crea un registro de inventario para un producto. */
+    @PostMapping("/inventario/crear")
+    public String crearInventario(
+            @RequestParam Long idProducto,
+            @RequestParam Integer cantidadActual,
+            @RequestParam Integer stockMinimo) {
+
+        Inventario inventario = new Inventario();
+        inventario.setIdProducto(idProducto);
+        inventario.setCantidadActual(cantidadActual);
+        inventario.setStockMinimo(stockMinimo);
+        inventario.setInhabilitado(false);
+        inventarioRepository.save(inventario);
+
+        return "redirect:/admin/inventario";
+    }
+
+    /** Actualiza las cantidades de un registro de inventario existente. */
+    @PostMapping("/inventario/actualizar")
+    public String actualizarInventario(
+            @RequestParam Long idInventario,
+            @RequestParam Integer cantidadActual) {
+
+        Inventario inventario = inventarioRepository.findById(idInventario).orElse(null);
+        if (inventario != null) {
+            inventario.setCantidadActual(cantidadActual);
+            inventarioRepository.save(inventario);
+        }
+        return "redirect:/admin/inventario";
+    }
+
+    // ===== PEDIDOS =====
+    /** Lista los pedidos registrados. */
+    @GetMapping("/pedidos")
+    public String pedidos(Model model) {
+        List<Pedido> pedidos = pedidoRepository.findByOcultoFalseOrderByFechaPedidoDesc();
+        model.addAttribute("pedidos", pedidos);
+        model.addAttribute("nombre", getUsuarioActual().getNombre());
+        return "admin/pedidos_admin";
+    }
+
+    /** Cambia el estado de un pedido. */
+    @PostMapping("/pedidos/cambiarEstado")
+    public String cambiarEstadoPedido(@RequestParam Long idPedido, @RequestParam String estado) {
+        Pedido pedido = pedidoRepository.findById(idPedido).orElse(null);
+        if (pedido != null) {
+            pedido.setEstado(estado);
+            pedidoRepository.save(pedido);
+        }
+        return "redirect:/admin/pedidos";
+    }
+
+    /** Oculta un pedido del listado activo (borrado logico). */
+    @PostMapping("/pedidos/ocultar")
+    public String ocultarPedido(@RequestParam Long idPedido) {
+        Pedido pedido = pedidoRepository.findById(idPedido).orElse(null);
+        if (pedido != null) {
+            pedido.setOculto(true);
+            pedidoRepository.save(pedido);
+        }
+        return "redirect:/admin/pedidos";
+    }
+
+    // ===== DEVOLUCIONES =====
+    /** Lista las devoluciones registradas. */
+    @GetMapping("/devoluciones")
+    public String devoluciones(Model model) {
+        List<Devolucion> devoluciones = devolucionRepository.findAllByOrderByFechaDevolucionDesc();
+        model.addAttribute("devoluciones", devoluciones);
+        model.addAttribute("nombre", getUsuarioActual().getNombre());
+        return "admin/devoluciones_admin";
+    }
+
+    /** Cambia el estado de una devolucion. */
+    @PostMapping("/devoluciones/cambiarEstado")
+    public String cambiarEstadoDevolucion(@RequestParam Long idDevolucion, @RequestParam String estado) {
+        Devolucion devolucion = devolucionRepository.findById(idDevolucion).orElse(null);
+        if (devolucion != null) {
+            devolucion.setEstado(estado);
+            devolucionRepository.save(devolucion);
+        }
+        return "redirect:/admin/devoluciones";
+    }
+
+    // ===== PERFIL =====
+    /** Muestra los datos de perfil del administrador autenticado. */
+    @GetMapping("/perfil")
+    public String perfil(Model model) {
+        Usuario usuario = getUsuarioActual();
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("nombre", usuario.getNombre());
+        return "admin/perfil_admin";
+    }
+
+    /** Actualiza los datos de perfil del administrador autenticado. */
+    @PostMapping("/perfil/actualizar")
+    public String actualizarPerfil(
+            @RequestParam(required = false) String nombre,
+            @RequestParam String correo,
+            @RequestParam String telefono,
+            @RequestParam String direccion,
+            @RequestParam(required = false) String password,
+            Model model) {
+
+        Usuario usuario = getUsuarioActual();
+        if (nombre != null && !nombre.isEmpty()) usuario.setNombre(nombre);
+        if (!telefono.isEmpty()) usuario.setTelefono(telefono);
+        if (!direccion.isEmpty()) usuario.setDireccion(direccion);
+        if (password != null && !password.isEmpty()) {
+            usuario.setContrasena(passwordEncoder.encode(password));
+        }
+
+        // Si el correo cambia, actualizamos la autenticación de Spring Security
+        if (!correo.isEmpty() && !correo.equals(usuario.getCorreo())) {
+            usuario.setCorreo(correo);
+            usuarioRepository.save(usuario);
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            Authentication newAuth = new UsernamePasswordAuthenticationToken(
+                    correo,
+                    auth.getCredentials(),
+                    auth.getAuthorities()
+            );
+            SecurityContextHolder.getContext().setAuthentication(newAuth);
+        } else {
+            usuarioRepository.save(usuario);
+        }
+
+        model.addAttribute("usuario", usuario);
+        model.addAttribute("nombre", usuario.getNombre());
+        model.addAttribute("exito", "Perfil actualizado correctamente.");
+        return "admin/perfil_admin";
+    }
+}
