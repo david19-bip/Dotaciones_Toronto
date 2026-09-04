@@ -34,6 +34,46 @@
             background: #34c37a;
             border-color: #34c37a;
         }
+
+        /* --- Barra de búsqueda y filtros --- */
+        .filtros-card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 16px 20px;
+        }
+        .filtros-card .form-control,
+        .filtros-card .form-select {
+            border-radius: 10px;
+        }
+        .input-busqueda {
+            position: relative;
+        }
+        .input-busqueda i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+        .input-busqueda input {
+            padding-left: 38px;
+        }
+        .btn-limpiar-filtros {
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            border-radius: 10px;
+            font-weight: 600;
+            background: #f8fafc;
+        }
+        .btn-limpiar-filtros:hover {
+            background: #e2e8f0;
+        }
+        #contadorResultados {
+            font-size: 0.85rem;
+        }
+        tr.fila-oculta {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -100,11 +140,45 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
+        <!-- Barra de búsqueda y filtros -->
+        <div class="filtros-card shadow-sm mb-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-busqueda">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="inputBusqueda" class="form-control" placeholder="Buscar por nombre, documento, correo o teléfono...">
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <select id="filtroRol" class="form-select">
+                        <option value="">Todos los roles</option>
+                        <option value="Admin">Administrador</option>
+                        <option value="Cliente">Cliente</option>
+                        <option value="Vendedor">Vendedor</option>
+                        <option value="Bodeguero">Bodeguero</option>
+                    </select>
+                </div>
+                <div class="col-md-2 col-6">
+                    <select id="filtroEstado" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="Habilitado">Habilitados</option>
+                        <option value="Inhabilitado">Inhabilitados</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" id="btnLimpiarFiltros" class="btn btn-limpiar-filtros w-100">
+                        <i class="bi bi-x-circle me-1"></i> Limpiar
+                    </button>
+                </div>
+            </div>
+            <div class="mt-2 text-muted" id="contadorResultados"></div>
+        </div>
+
         <!-- Tabla de usuarios dentro de tarjeta Glass -->
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-0 overflow-hidden" style="border-radius: 14px;">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0" id="tablaUsuarios">
                         <thead>
                             <tr>
                                 <th class="p-3 ps-4"># ID</th>
@@ -121,7 +195,11 @@
                             <tr th:if="${#lists.isEmpty(usuarios)}">
                                 <td colspan="8" class="text-center p-4 text-muted">No hay usuarios registrados en la base de datos.</td>
                             </tr>
-                            <tr th:each="usuario : ${usuarios}">
+                            <tr th:each="usuario : ${usuarios}"
+                                class="fila-usuario"
+                                th:attr="data-rol=${usuario.idRol == 1 ? 'Admin' : (usuario.idRol == 2 ? 'Cliente' : (usuario.idRol == 3 ? 'Vendedor' : 'Bodeguero'))},
+                                         data-estado=${usuario.estado},
+                                         data-busqueda=${#strings.toLowerCase(usuario.nombre + ' ' + usuario.documento + ' ' + usuario.correo + ' ' + usuario.telefono)}">
                                 <td class="p-3 ps-4 fw-bold text-secondary" th:text="${'#' + usuario.id}">#1</td>
                                 <td class="p-3 fw-semibold text-dark" th:text="${usuario.nombre}">Carlos Pérez</td>
                                 <td class="p-3" th:text="${usuario.documento}">1010123456</td>
@@ -156,6 +234,11 @@
                                                 th:text="${usuario.estado == 'Habilitado' ? 'Inhabilitar' : 'Habilitar'}">
                                         </button>
                                     </form>
+                                </td>
+                            </tr>
+                            <tr id="filaSinResultados" style="display: none;">
+                                <td colspan="8" class="text-center p-4 text-muted">
+                                    <i class="bi bi-search me-1"></i> No se encontraron usuarios que coincidan con la búsqueda.
                                 </td>
                             </tr>
                         </tbody>
@@ -278,6 +361,61 @@
                 e.stopPropagation();
             }
         });
+    </script>
+
+    <!-- Script de Búsqueda y Filtros de Usuarios -->
+    <script>
+        (function () {
+            const inputBusqueda   = document.getElementById('inputBusqueda');
+            const filtroRol       = document.getElementById('filtroRol');
+            const filtroEstado    = document.getElementById('filtroEstado');
+            const btnLimpiar      = document.getElementById('btnLimpiarFiltros');
+            const contador        = document.getElementById('contadorResultados');
+            const filaSinResultados = document.getElementById('filaSinResultados');
+            const filas = Array.from(document.querySelectorAll('#tablaUsuarios tbody tr.fila-usuario'));
+
+            function aplicarFiltros() {
+                const texto = inputBusqueda.value.trim().toLowerCase();
+                const rol = filtroRol.value;
+                const estado = filtroEstado.value;
+
+                let visibles = 0;
+
+                filas.forEach(function (fila) {
+                    const coincideTexto = texto === '' || (fila.dataset.busqueda || '').includes(texto);
+                    const coincideRol = rol === '' || fila.dataset.rol === rol;
+                    const coincideEstado = estado === '' || fila.dataset.estado === estado;
+
+                    const visible = coincideTexto && coincideRol && coincideEstado;
+                    fila.classList.toggle('fila-oculta', !visible);
+                    if (visible) visibles++;
+                });
+
+                if (filaSinResultados) {
+                    filaSinResultados.style.display = (visibles === 0 && filas.length > 0) ? '' : 'none';
+                }
+
+                if (filas.length > 0) {
+                    contador.textContent = visibles + ' de ' + filas.length + ' usuario(s) mostrados';
+                } else {
+                    contador.textContent = '';
+                }
+            }
+
+            if (filas.length > 0) {
+                inputBusqueda.addEventListener('input', aplicarFiltros);
+                filtroRol.addEventListener('change', aplicarFiltros);
+                filtroEstado.addEventListener('change', aplicarFiltros);
+                btnLimpiar.addEventListener('click', function () {
+                    inputBusqueda.value = '';
+                    filtroRol.value = '';
+                    filtroEstado.value = '';
+                    aplicarFiltros();
+                });
+
+                aplicarFiltros();
+            }
+        })();
     </script>
 </body>
 </html>
