@@ -15,6 +15,24 @@
       rel="stylesheet"
     />
     <link th:href="@{/css/cliente.css}" rel="stylesheet" />
+    <style>
+      /* Campo de cantidad editable dentro del carrito */
+      .qty-control input.qty-input {
+        width: 52px;
+        height: 26px;
+        text-align: center;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-weight: 600;
+        padding: 0;
+        -moz-appearance: textfield;
+      }
+      .qty-control input.qty-input::-webkit-outer-spin-button,
+      .qty-control input.qty-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+    </style>
   </head>
   <body>
     <!-- Sidebar -->
@@ -278,7 +296,14 @@
                     <div class="d-flex justify-content-between align-items-center mt-2">
                         <div class="qty-control">
                             <button onclick="cambiarCantidad(${item.idDetalle}, ${item.cantidad - 1})">-</button>
-                            <span>${item.cantidad}</span>
+                            <input type="number"
+                                   class="qty-input"
+                                   min="1"
+                                   step="1"
+                                   value="${item.cantidad}"
+                                   data-id-detalle="${item.idDetalle}"
+                                   onkeydown="if(event.key === 'Enter'){ event.preventDefault(); this.blur(); }"
+                                   onblur="actualizarCantidadManual(this)">
                             <button onclick="cambiarCantidad(${item.idDetalle}, ${item.cantidad + 1})">+</button>
                         </div>
                         <span class="text-muted small">${formatoMoneda(item.subtotal)}</span>
@@ -307,6 +332,9 @@
       }
 
       async function cambiarCantidad(idDetalle, nuevaCantidad) {
+        if (nuevaCantidad < 1) {
+          nuevaCantidad = 1;
+        }
         try {
           const data = await llamarCarrito("/cliente/carrito/actualizar", {
             idDetalle: idDetalle,
@@ -316,6 +344,20 @@
         } catch (e) {
           alert("No se pudo actualizar la cantidad.");
         }
+      }
+
+      // Se dispara cuando el cliente escribe la cantidad manualmente
+      // y sale del campo (Enter o click afuera).
+      function actualizarCantidadManual(input) {
+        const idDetalle = input.getAttribute("data-id-detalle");
+        let cantidad = parseInt(input.value, 10);
+
+        if (isNaN(cantidad) || cantidad < 1) {
+          cantidad = 1;
+        }
+
+        input.value = cantidad;
+        cambiarCantidad(idDetalle, cantidad);
       }
 
       async function eliminarItem(idDetalle) {
