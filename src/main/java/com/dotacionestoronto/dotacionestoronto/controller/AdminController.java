@@ -6,8 +6,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ContentDisposition;
@@ -21,17 +25,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.dotacionestoronto.dotacionestoronto.entity.DetallePedido;
 import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
 import com.dotacionestoronto.dotacionestoronto.entity.Inventario;
 import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
 import com.dotacionestoronto.dotacionestoronto.entity.Producto;
 import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
+import com.dotacionestoronto.dotacionestoronto.repository.DetallePedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.DevolucionRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.InventarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
@@ -60,6 +68,9 @@ public class AdminController {
 
     @Autowired
     private InventarioRepository inventarioRepository;
+
+    @Autowired
+    private DetallePedidoRepository detallePedidoRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -369,33 +380,92 @@ public class AdminController {
         return "redirect:/admin/inventario";
     }
 
-    // ===== PEDIDOS =====
+    // ===== PEDIDOS (SOLO LECTURA PARA EL ADMIN) =====
     @GetMapping("/pedidos")
     public String pedidos(Model model) {
         List<Pedido> pedidos = pedidoRepository.findByOcultoFalseOrderByFechaPedidoDesc();
-        model.addAttribute("pedidos", pedidos);
+
+        List<PedidoVistaAdmin> vista = new ArrayList<>();
+        for (Pedido p : pedidos) {
+            PedidoVistaAdmin v = new PedidoVistaAdmin();
+            v.id = p.getId();
+            v.fecha = p.getFechaPedido();
+            v.estado = p.getEstado();
+
+            Usuario cliente = usuarioRepository.findById(p.getIdUsuario()).orElse(null);
+            v.clienteNombre = cliente != null ? cliente.getNombre() : "Cliente eliminado";
+
+            List<DetallePedido> detalles = detallePedidoRepository.findByIdPedido(p.getId());
+            v.cantidadProductos = detalles.stream().mapToInt(DetallePedido::getCantidad).sum();
+            v.total = detalles.stream()
+                    .map(d -> d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            vista.add(v);
+        }
+
+        model.addAttribute("pedidos", vista);
         model.addAttribute("nombre", getUsuarioActual().getNombre());
         return "admin/pedidos_admin";
     }
 
-    @PostMapping("/pedidos/cambiarEstado")
-    public String cambiarEstadoPedido(@RequestParam Long idPedido, @RequestParam String estado) {
-        Pedido pedido = pedidoRepository.findById(idPedido).orElse(null);
-        if (pedido != null) {
-            pedido.setEstado(estado);
-            pedidoRepository.save(pedido);
+    @GetMapping("/pedidos/{id}/detalle")
+    @ResponseBody
+    public Map<String, Object> detallePedidoAdmin(@PathVariable Long id) {
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Pedido no encontrado"));
+
+        Usuario cliente = usuarioRepository.findById(pedido.getIdUsuario()).orElse(null);
+
+        List<DetallePedido> detalles = detallePedidoRepository.findByIdPedido(id);
+        List<Map<String, Object>> items = new ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
+
+        for (DetallePedido d : detalles) {
+            Producto producto = productoRepository.findById(d.getIdProducto()).orElse(null);
+
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("producto", producto != null ? producto.getNombre() : "Producto eliminado");
+            item.put("talla", producto != null ? producto.getTalla() : null);
+            item.put("color", producto != null ? producto.getColor() : null);
+            item.put("imagen", producto != null ? producto.getImagen() : null);
+            item.put("cantidad", d.getCantidad());
+            item.put("precioUnitario", d.getPrecioUnitario());
+
+            BigDecimal subtotal = d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad()));
+            item.put("subtotal", subtotal);
+            total = total.add(subtotal);
+
+            items.add(item);
         }
-        return "redirect:/admin/pedidos";
+
+        Map<String, Object> resultado = new LinkedHashMap<>();
+        resultado.put("idPedido", pedido.getId());
+        resultado.put("estado", pedido.getEstado());
+        resultado.put("clienteNombre", cliente != null ? cliente.getNombre() : "Cliente eliminado");
+        resultado.put("clienteCorreo", cliente != null ? cliente.getCorreo() : null);
+        resultado.put("clienteTelefono", cliente != null ? cliente.getTelefono() : null);
+        resultado.put("clienteDireccion", cliente != null ? cliente.getDireccion() : null);
+        resultado.put("items", items);
+        resultado.put("total", total);
+
+        return resultado;
     }
 
-    @PostMapping("/pedidos/ocultar")
-    public String ocultarPedido(@RequestParam Long idPedido) {
-        Pedido pedido = pedidoRepository.findById(idPedido).orElse(null);
-        if (pedido != null) {
-            pedido.setOculto(true);
-            pedidoRepository.save(pedido);
-        }
-        return "redirect:/admin/pedidos";
+    public static class PedidoVistaAdmin {
+        public Long id;
+        public LocalDateTime fecha;
+        public String estado;
+        public String clienteNombre;
+        public Integer cantidadProductos;
+        public BigDecimal total;
+
+        public Long getId() { return id; }
+        public LocalDateTime getFecha() { return fecha; }
+        public String getEstado() { return estado; }
+        public String getClienteNombre() { return clienteNombre; }
+        public Integer getCantidadProductos() { return cantidadProductos; }
+        public BigDecimal getTotal() { return total; }
     }
 
     // ===== DEVOLUCIONES =====
@@ -443,7 +513,6 @@ public class AdminController {
             usuario.setContrasena(passwordEncoder.encode(password));
         }
 
-        // Si el correo cambia, actualizamos la autenticación de Spring Security
         if (!correo.isEmpty() && !correo.equals(usuario.getCorreo())) {
             usuario.setCorreo(correo);
             usuarioRepository.save(usuario);
