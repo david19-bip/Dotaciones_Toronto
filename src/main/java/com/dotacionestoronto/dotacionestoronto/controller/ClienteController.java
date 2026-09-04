@@ -156,6 +156,9 @@ public class ClienteController {
 
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("producto", producto != null ? producto.getNombre() : "Producto eliminado");
+            item.put("talla", producto != null ? producto.getTalla() : null);
+            item.put("color", producto != null ? producto.getColor() : null);
+            item.put("imagen", producto != null ? producto.getImagen() : null);
             item.put("cantidad", d.getCantidad());
             item.put("precioUnitario", d.getPrecioUnitario());
             item.put("subtotal", d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad())));
