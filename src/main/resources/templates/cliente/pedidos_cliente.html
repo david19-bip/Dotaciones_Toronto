@@ -9,6 +9,137 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link th:href="@{/css/cliente.css}" rel="stylesheet">
+    <style>
+        /* ===== Modal de detalle de pedido, rediseñado ===== */
+        #modalDetalle .modal-content {
+            border: none;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        #modalDetalle .modal-header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: none;
+            padding: 20px 24px;
+        }
+
+        #modalDetalle .modal-title {
+            color: #fff;
+        }
+
+        #modalDetalle .modal-header .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        #modalDetalle .modal-body {
+            padding: 20px 24px;
+            max-height: 65vh;
+            overflow-y: auto;
+        }
+
+        .detalle-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .detalle-item:last-child {
+            border-bottom: none;
+        }
+
+        .detalle-item-img {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+            border: 1px solid #f1f5f9;
+        }
+
+        .detalle-item-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .detalle-item-img i {
+            font-size: 1.4rem;
+            color: #cbd5e1;
+        }
+
+        .detalle-item-info {
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .detalle-item-info h6 {
+            font-weight: 700;
+            font-size: 0.92rem;
+            margin-bottom: 2px;
+            color: #1e293b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .detalle-item-info .badges-mini {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 2px;
+        }
+
+        .detalle-item-info .badge-mini {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .detalle-item-info .precio-cant {
+            font-size: 0.78rem;
+            color: #94a3b8;
+        }
+
+        .detalle-item-subtotal {
+            font-weight: 800;
+            font-size: 0.95rem;
+            background: var(--tor-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        #modalDetalle .modal-footer {
+            border: none;
+            background: #f8fafc;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #modalDetalle .modal-footer .total-label {
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        #modalDetalle .modal-footer .total-valor {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #1e293b;
+        }
+    </style>
 </head>
 <body>
 
@@ -26,6 +157,7 @@
             <a href="/cliente/productos"><i class="bi bi-bag-check-fill"></i> Productos</a>
             <a href="/cliente/pedidos "class="active"><i class="bi bi-receipt-cutoff"></i> Pedidos</a>
             <a href="/cliente/devoluciones"><i class="bi bi-arrow-counterclockwise"></i> Devoluciones</a>
+            <a href="/cliente/nosotros"><i class="bi bi-info-circle-fill"></i> Nosotros</a>
         </nav>
         <form th:action="@{/logout}" method="post" class="mt-auto">
             <button type="submit" class="logout-btn">
@@ -82,24 +214,18 @@
 
     <!-- Modal detalle de pedido -->
     <div class="modal fade" id="modalDetalle" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold" id="modalDetalleTitulo">Detalle del pedido</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <table class="table table-sm mb-0">
-                        <thead>
-                            <tr class="text-muted small">
-                                <th>Producto</th>
-                                <th>Cant.</th>
-                                <th>Precio</th>
-                                <th>Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody id="modalDetalleBody"></tbody>
-                    </table>
+                <div class="modal-body" id="modalDetalleBody">
+                    <!-- Contenido inyectado por JS -->
+                </div>
+                <div class="modal-footer">
+                    <span class="total-label">TOTAL DEL PEDIDO</span>
+                    <span class="total-valor" id="modalDetalleTotal">$ 0</span>
                 </div>
             </div>
         </div>
@@ -114,7 +240,9 @@
         async function verDetalle(idPedido) {
             document.getElementById('modalDetalleTitulo').textContent = 'Detalle del pedido PED-' + idPedido;
             const body = document.getElementById('modalDetalleBody');
-            body.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>';
+            const totalEl = document.getElementById('modalDetalleTotal');
+            body.innerHTML = '<p class="text-center text-muted py-4 mb-0">Cargando...</p>';
+            totalEl.textContent = formatoMoneda(0);
 
             const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDetalle'));
             modal.show();
@@ -122,20 +250,44 @@
             try {
                 const resp = await fetch('/cliente/pedidos/' + idPedido + '/detalle');
                 const items = await resp.json();
+
                 if (!items.length) {
-                    body.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sin productos registrados.</td></tr>';
+                    body.innerHTML = '<p class="text-center text-muted py-4 mb-0">Sin productos registrados.</p>';
                     return;
                 }
-                body.innerHTML = items.map(item => `
-                    <tr>
-                        <td>${item.producto}</td>
-                        <td>${item.cantidad}</td>
-                        <td>${formatoMoneda(item.precioUnitario)}</td>
-                        <td>${formatoMoneda(item.subtotal)}</td>
-                    </tr>
-                `).join('');
+
+                let totalPedido = 0;
+
+                body.innerHTML = items.map(item => {
+                    totalPedido += item.subtotal;
+
+                    const imgHtml = item.imagen
+                        ? `<img src="/${item.imagen}" alt="${item.producto}">`
+                        : `<i class="bi bi-tshirt"></i>`;
+
+                    const tallaBadge = item.talla ? `<span class="badge-mini">Talla ${item.talla}</span>` : '';
+                    const colorBadge = item.color ? `<span class="badge-mini">${item.color}</span>` : '';
+
+                    return `
+                        <div class="detalle-item">
+                            <div class="detalle-item-img">${imgHtml}</div>
+                            <div class="detalle-item-info">
+                                <h6>${item.producto}</h6>
+                                <div class="badges-mini">
+                                    ${tallaBadge}
+                                    ${colorBadge}
+                                </div>
+                                <div class="precio-cant">${item.cantidad} × ${formatoMoneda(item.precioUnitario)}</div>
+                            </div>
+                            <div class="detalle-item-subtotal">${formatoMoneda(item.subtotal)}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                totalEl.textContent = formatoMoneda(totalPedido);
+
             } catch (e) {
-                body.innerHTML = '<tr><td colspan="4" class="text-center text-danger">No se pudo cargar el detalle.</td></tr>';
+                body.innerHTML = '<p class="text-center text-danger py-4 mb-0">No se pudo cargar el detalle.</p>';
             }
         }
     </script>

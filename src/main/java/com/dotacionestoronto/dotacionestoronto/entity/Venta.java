@@ -3,11 +3,6 @@ package com.dotacionestoronto.dotacionestoronto.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-/**
- * Venta generada automaticamente cuando un {@link Pedido} pasa a estado
- * "Entregado". Referencia al pedido de origen y al total efectivamente
- * pagado.
- */
 @Entity
 @Table(name = "venta")
 public class Venta {

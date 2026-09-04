@@ -9,11 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
-/**
- * Historial de movimientos sobre el inventario (entradas, salidas o ajustes),
- * util para trazabilidad: quien hizo el cambio, cuando y por que motivo.
- * La fecha se asigna automaticamente al persistir el registro.
- */
 @Entity
 @Table(name = "movimientos_inventario")
 public class MovimientoInventario {

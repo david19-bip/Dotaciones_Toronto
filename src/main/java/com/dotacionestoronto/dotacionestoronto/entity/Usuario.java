@@ -2,11 +2,6 @@ package com.dotacionestoronto.dotacionestoronto.entity;
 
 import jakarta.persistence.*;
 
-/**
- * Usuario del sistema. El campo idRol determina el rol de seguridad
- * (1=Administrador, 2=Cliente, 3=Vendedor, 4=Bodeguero) y el campo estado
- * controla si el usuario puede iniciar sesion (Habilitado/Inhabilitado).
- */
 @Entity
 @Table(name = "usuario")
 public class Usuario {

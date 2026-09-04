@@ -7,10 +7,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Registro de existencias de un {@link Producto} en bodega: cantidad actual,
- * stock minimo de alerta y si el item esta habilitado para operar.
- */
 @Entity
 @Table(name = "inventario")
 public class Inventario {

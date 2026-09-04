@@ -5,28 +5,12 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-/**
- * Componente utilitario que abre automáticamente el navegador del sistema
- * apuntando a la aplicación una vez que Spring Boot termina de arrancar.
- * Pensado para facilitar la ejecución local (por ejemplo, al iniciar con un
- * doble clic o desde un acceso directo), no tiene efecto en un despliegue
- * en servidor.
- */
 @Component
 public class BrowserLauncher {
 
-    /** Puerto en el que quedó escuchando la aplicación (por defecto 8080). */
     @Value("${server.port:8080}")
     private String port;
 
-    /**
-     * Escucha el evento {@link ApplicationReadyEvent} (aplicación lista para
-     * recibir peticiones) y abre el navegador por defecto del sistema
-     * operativo en la URL local de la aplicación. Detecta si el sistema es
-     * Windows, macOS o Linux para usar el comando adecuado. Si el navegador
-     * no puede abrirse por cualquier motivo, el error se ignora
-     * silenciosamente: esto nunca debe impedir que la aplicación arranque.
-     */
     @EventListener(ApplicationReadyEvent.class)
     public void openBrowser() {
         try {

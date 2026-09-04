@@ -15,17 +15,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-/**
- * Configuración principal de Spring Security para Dotaciones Toronto.
- * Define qué rutas son públicas y cuáles requieren un rol específico
- * (Administrador, Vendedor, Cliente o Bodeguero), el flujo de login/logout
- * por formulario y el algoritmo de cifrado de contraseñas.
- */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    /** Servicio que carga los usuarios y sus roles para la autenticación (ver {@link UsuarioService}). */
     @Autowired
     private UsuarioService usuarioService;
 
@@ -33,10 +26,6 @@ public class SecurityConfig {
     // PASSWORD ENCODER
     // ==========================================
 
-    /**
-     * Encoder de contraseñas basado en BCrypt, usado tanto al registrar
-     * usuarios como al validar sus credenciales en el login.
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -46,19 +35,6 @@ public class SecurityConfig {
     // CONFIGURACIÓN DE SEGURIDAD
     // ==========================================
 
-    /**
-     * Define las reglas de autorización por ruta, el login por formulario
-     * (con manejo diferenciado de errores para usuarios inhabilitados) y el
-     * logout de la aplicación.
-     * <p>
-     * Reglas de acceso: las rutas estáticas y de autenticación son públicas;
-     * cada prefijo {@code /admin}, {@code /vendedor}, {@code /cliente} y
-     * {@code /bodeguero} exige el authority de rol correspondiente; y
-     * cualquier otra ruta exige, como mínimo, estar autenticado.
-     *
-     * @param http builder de configuración HTTP de Spring Security
-     * @return la cadena de filtros de seguridad ya construida
-     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -97,9 +73,6 @@ public class SecurityConfig {
     .loginPage("/login")
     .loginProcessingUrl("/login")
     .successHandler(new CustomSuccessHandler())
-    // Distingue un login fallido por credenciales incorrectas de uno
-    // fallido porque el usuario fue inhabilitado (DisabledException
-    // lanzada en UsuarioService), para mostrar un mensaje adecuado.
 .failureHandler((request, response, exception) -> {
     String mensaje = exception.getMessage() != null ? exception.getMessage() : "";
     Throwable causa = exception.getCause();
@@ -137,15 +110,6 @@ public class SecurityConfig {
     // AUTHENTICATION MANAGER
     // ==========================================
 
-    /**
-     * Expone el {@link AuthenticationManager} configurado con
-     * {@link UsuarioService} como fuente de usuarios y BCrypt como
-     * mecanismo de verificación de contraseñas.
-     *
-     * @param http builder de configuración HTTP, usado para obtener el
-     *             {@link AuthenticationManagerBuilder} compartido
-     * @return el manager de autenticación ya construido
-     */
     @Bean
     public AuthenticationManager authenticationManager(
             HttpSecurity http) throws Exception {

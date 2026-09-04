@@ -30,21 +30,10 @@ import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
 
 import jakarta.servlet.http.HttpSession;
 
-/**
- * Controlador del carrito de compras del cliente.
- * <p>
- * A diferencia de las entidades {@code Carrito}/{@code DetalleCarrito} (que
- * existen en el modelo de datos pero no se usan aquí), este controlador
- * mantiene el carrito completamente en la sesión HTTP del usuario
- * ({@link HttpSession}), como un mapa en memoria. El carrito solo se
- * convierte en datos persistentes (un {@code Pedido} real con sus
- * {@code DetallePedido}) en el momento de finalizar la compra.
- */
 @Controller
 @RequestMapping("/cliente/carrito")
 public class CarritoController {
 
-    /** Clave bajo la cual se guarda el carrito dentro de la sesión HTTP. */
     private static final String SESSION_KEY = "carrito";
 
     @Autowired private ProductoRepository productoRepository;
@@ -52,16 +41,11 @@ public class CarritoController {
     @Autowired private DetallePedidoRepository detallePedidoRepository;
     @Autowired private UsuarioRepository usuarioRepository;
 
-    /** Obtiene el {@link Usuario} actualmente autenticado a partir del contexto de seguridad. */
     private Usuario getUsuarioActual() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return usuarioRepository.findByCorreo(auth.getName());
     }
 
-    /**
-     * Obtiene el carrito guardado en la sesión del usuario, creando uno
-     * vacío (y guardándolo en sesión) si todavía no existe.
-     */
     @SuppressWarnings("unchecked")
     private Map<Long, CarritoItem> getCarrito(HttpSession session) {
         Map<Long, CarritoItem> carrito = (Map<Long, CarritoItem>) session.getAttribute(SESSION_KEY);
@@ -72,25 +56,14 @@ public class CarritoController {
         return carrito;
     }
 
-    /**
-     * Devuelve en formato JSON el estado actual del carrito de la sesión:
-     * items, total en dinero y total de unidades.
-     */
+    // GET /cliente/carrito -> estado actual del carrito
     @GetMapping
     @ResponseBody
     public Map<String, Object> verCarrito(HttpSession session) {
         return construirRespuesta(getCarrito(session));
     }
 
-    /**
-     * Agrega un producto al carrito de la sesión. Si el producto ya estaba
-     * en el carrito, suma la cantidad indicada a la cantidad existente en
-     * lugar de duplicar la línea.
-     *
-     * @param idProducto id del producto a agregar
-     * @param cantidad   unidades a agregar (por defecto 1)
-     * @return el estado actualizado del carrito, en JSON
-     */
+    // POST /cliente/carrito/agregar
     @PostMapping("/agregar")
     @ResponseBody
     public Map<String, Object> agregar(@RequestParam Long idProducto,
@@ -114,15 +87,7 @@ public class CarritoController {
         return construirRespuesta(carrito);
     }
 
-    /**
-     * Actualiza la cantidad de un ítem del carrito. Si la nueva cantidad es
-     * cero o negativa, el ítem se elimina del carrito.
-     *
-     * @param idDetalle id del producto dentro del carrito (ver nota en
-     *                  {@link #construirRespuesta} sobre este identificador)
-     * @param cantidad  nueva cantidad deseada
-     * @return el estado actualizado del carrito, en JSON
-     */
+    // POST /cliente/carrito/actualizar
     @PostMapping("/actualizar")
     @ResponseBody
     public Map<String, Object> actualizar(@RequestParam Long idDetalle,
@@ -140,7 +105,7 @@ public class CarritoController {
         return construirRespuesta(carrito);
     }
 
-    /** Elimina un ítem específico del carrito de la sesión. */
+    // POST /cliente/carrito/eliminar
     @PostMapping("/eliminar")
     @ResponseBody
     public Map<String, Object> eliminar(@RequestParam Long idDetalle, HttpSession session) {
@@ -149,14 +114,7 @@ public class CarritoController {
         return construirRespuesta(carrito);
     }
 
-    /**
-     * Finaliza la compra: convierte el carrito en sesión en un
-     * {@code Pedido} real (estado "Pendiente") junto con sus
-     * {@code DetallePedido}, uno por cada producto del carrito. Si el
-     * carrito está vacío, no crea nada y muestra un mensaje de error.
-     * Al terminar, limpia el carrito de la sesión y redirige al listado de
-     * pedidos del cliente.
-     */
+    // POST /cliente/carrito/finalizar -> crea Pedido + DetallePedido reales
     @PostMapping("/finalizar")
     public String finalizar(HttpSession session, RedirectAttributes redirectAttributes) {
         Map<Long, CarritoItem> carrito = getCarrito(session);
@@ -190,13 +148,6 @@ public class CarritoController {
         return "redirect:/cliente/pedidos";
     }
 
-    /**
-     * Traduce el mapa interno del carrito a la estructura JSON que consume
-     * el frontend (lista de items con subtotal, total general y total de
-     * unidades). Nota: como el carrito solo existe en sesión, se usa el id
-     * del producto como "idDetalle" temporal, ya que todavía no existe una
-     * fila real de detalle en base de datos.
-     */
     private Map<String, Object> construirRespuesta(Map<Long, CarritoItem> carrito) {
         List<Map<String, Object>> items = new ArrayList<>();
         BigDecimal total = BigDecimal.ZERO;
@@ -222,7 +173,6 @@ public class CarritoController {
         return resp;
     }
 
-    /** Ítem del carrito almacenado en sesión: producto, precio y cantidad. */
     private static class CarritoItem implements Serializable {
         Long idProducto;
         String nombre;

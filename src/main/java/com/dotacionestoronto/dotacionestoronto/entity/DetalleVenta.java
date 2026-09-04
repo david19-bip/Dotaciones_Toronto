@@ -9,11 +9,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Linea de detalle de una {@link Venta}: producto, cantidad y precio unitario
- * efectivamente vendido. Se genera automaticamente a partir de los
- * DetallePedido cuando un pedido pasa a estado "Entregado".
- */
 @Entity
 @Table(name = "detalle_venta")
 public class DetalleVenta {

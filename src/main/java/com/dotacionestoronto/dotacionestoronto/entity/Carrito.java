@@ -3,12 +3,6 @@ package com.dotacionestoronto.dotacionestoronto.entity;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
-/**
- * Representa el carrito de compras persistente de un usuario.
- * Nota: en el flujo actual de la aplicacion, el carrito de compra se maneja
- * en la sesion HTTP (ver CarritoController); esta entidad queda disponible
- * para un futuro carrito persistido en base de datos.
- */
 @Entity
 @Table(name = "carrito")
 public class Carrito {

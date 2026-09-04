@@ -6,8 +6,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ContentDisposition;
@@ -21,29 +25,31 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.dotacionestoronto.dotacionestoronto.entity.DetallePedido;
 import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
 import com.dotacionestoronto.dotacionestoronto.entity.Inventario;
 import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
 import com.dotacionestoronto.dotacionestoronto.entity.Producto;
 import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
+import com.dotacionestoronto.dotacionestoronto.repository.DetallePedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.DevolucionRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.InventarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
+import com.dotacionestoronto.dotacionestoronto.service.ReporteProductosExcelService;
+import com.dotacionestoronto.dotacionestoronto.service.ReporteProductosService;
 import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosExcelService;
 import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosService;
 
-/**
- * Controlador del panel de administracion: gestion integral de usuarios,
- * productos, inventario, pedidos y devoluciones, ademas de reportes de
- * usuarios en PDF y Excel, y el perfil propio del administrador.
- */
 @Controller
 @RequestMapping("/admin")
 public class AdminController {
@@ -64,6 +70,9 @@ public class AdminController {
     private InventarioRepository inventarioRepository;
 
     @Autowired
+    private DetallePedidoRepository detallePedidoRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -72,14 +81,18 @@ public class AdminController {
     @Autowired
     private ReporteUsuariosExcelService reporteUsuariosExcelService;
 
-    /** Obtiene el {@link Usuario} actualmente autenticado a partir del contexto de seguridad. */
+    @Autowired
+    private ReporteProductosService reporteProductosService;
+
+    @Autowired
+    private ReporteProductosExcelService reporteProductosExcelService;
+
     private Usuario getUsuarioActual() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return usuarioRepository.findByCorreo(auth.getName());
     }
 
     // ===== PANEL =====
-    /** Panel principal del administrador, con indicadores generales del sistema. */
     @GetMapping("/panel")
     public String panel(Model model) {
         model.addAttribute("nombre", getUsuarioActual().getNombre());
@@ -91,7 +104,6 @@ public class AdminController {
     }
 
     // ===== USUARIOS =====
-    /** Lista los usuarios registrados en el sistema. */
     @GetMapping("/usuarios")
     public String usuarios(Model model) {
         model.addAttribute("usuarios", usuarioRepository.findAll());
@@ -99,7 +111,6 @@ public class AdminController {
         return "admin/usuarios_admin";
     }
 
-    /** Crea un nuevo usuario desde el panel de administracion. */
     @PostMapping("/usuarios/crear")
     public String crearUsuario(
             @RequestParam String nombre,
@@ -139,7 +150,6 @@ public class AdminController {
         return "redirect:/admin/usuarios";
     }
 
-    /** Genera y descarga el reporte de usuarios en formato PDF (ver ReporteUsuariosService). */
     @GetMapping("/usuarios/reporte")
     public ResponseEntity<byte[]> reporteUsuarios() {
         List<Usuario> usuarios = usuarioRepository.findAll();
@@ -155,7 +165,6 @@ public class AdminController {
         return ResponseEntity.ok().headers(headers).body(pdf);
     }
 
-    /** Genera y descarga el reporte de usuarios en formato Excel (ver ReporteUsuariosExcelService). */
     @GetMapping("/usuarios/reporte/excel")
     public ResponseEntity<byte[]> reporteUsuariosExcel() {
         List<Usuario> usuarios = usuarioRepository.findAll();
@@ -172,7 +181,6 @@ public class AdminController {
         return ResponseEntity.ok().headers(headers).body(excel);
     }
 
-    /** Habilita o inhabilita a un usuario (un usuario inhabilitado no puede iniciar sesion). */
     @PostMapping("/usuarios/toggleEstado")
     public String toggleEstadoUsuario(@RequestParam Long idUsuario) {
         Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
@@ -183,7 +191,6 @@ public class AdminController {
         return "redirect:/admin/usuarios";
     }
 
-    /** Muestra el formulario de edicion de un usuario existente. */
     @GetMapping("/usuarios/editar")
     public String editarUsuarioForm(@RequestParam Long id, Model model) {
         Usuario usuario = usuarioRepository.findById(id).orElse(null);
@@ -195,12 +202,9 @@ public class AdminController {
         return "admin/editar_usuario_admin";
     }
 
-    /** Guarda los cambios realizados sobre un usuario desde el panel de administracion. */
     @PostMapping("/usuarios/actualizar")
     public String actualizarUsuarioAdmin(
             @RequestParam Long idUsuario,
-            @RequestParam String nombre,
-            @RequestParam String documento,
             @RequestParam String correo,
             @RequestParam String telefono,
             @RequestParam String direccion,
@@ -209,8 +213,6 @@ public class AdminController {
 
         Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
         if (usuario != null) {
-            usuario.setNombre(nombre);
-            usuario.setDocumento(documento);
             usuario.setCorreo(correo);
             usuario.setTelefono(telefono);
             usuario.setDireccion(direccion);
@@ -222,7 +224,6 @@ public class AdminController {
     }
 
     // ===== PRODUCTOS =====
-    /** Lista los productos del catalogo. */
     @GetMapping("/productos")
     public String productos(Model model) {
         model.addAttribute("productos", productoRepository.findAll());
@@ -230,7 +231,6 @@ public class AdminController {
         return "admin/productos_admin";
     }
 
-    /** Crea un nuevo producto, incluyendo la carga de su imagen. */
     @PostMapping("/productos/crear")
     public String crearProducto(
             @RequestParam String nombre,
@@ -259,7 +259,42 @@ public class AdminController {
         return "redirect:/admin/productos";
     }
 
-    /** Habilita o inhabilita un producto (deja de mostrarse en el catalogo del cliente sin eliminarlo). */
+    @PostMapping("/productos/actualizar")
+    public String actualizarProducto(
+            @RequestParam Long idProducto,
+            @RequestParam String nombre,
+            @RequestParam BigDecimal precio,
+            @RequestParam String talla,
+            @RequestParam String color,
+            @RequestParam(required = false) MultipartFile imagen,
+            RedirectAttributes redirectAttributes) throws IOException {
+
+        Producto producto = productoRepository.findById(idProducto).orElse(null);
+
+        if (producto == null) {
+            redirectAttributes.addFlashAttribute("error", "No se encontró el producto a actualizar.");
+            return "redirect:/admin/productos";
+        }
+
+        producto.setNombre(nombre);
+        producto.setPrecio(precio);
+        producto.setTalla(talla);
+        producto.setColor(color);
+
+        if (imagen != null && !imagen.isEmpty()) {
+            String nombreArchivo = System.currentTimeMillis() + "_" + imagen.getOriginalFilename();
+            Path ruta = Paths.get("uploads/productos/" + nombreArchivo);
+            Files.createDirectories(ruta.getParent());
+            Files.write(ruta, imagen.getBytes());
+            producto.setImagen("images/productos/" + nombreArchivo);
+        }
+
+        productoRepository.save(producto);
+
+        redirectAttributes.addFlashAttribute("exito", "Producto actualizado correctamente.");
+        return "redirect:/admin/productos";
+    }
+
     @PostMapping("/productos/toggleEstado")
     public String toggleEstadoProducto(@RequestParam Long idProducto) {
         Producto producto = productoRepository.findById(idProducto).orElse(null);
@@ -270,15 +305,44 @@ public class AdminController {
         return "redirect:/admin/productos";
     }
 
-    /** Elimina definitivamente un producto. */
     @PostMapping("/productos/eliminar")
     public String eliminarProducto(@RequestParam Long idProducto) {
         productoRepository.deleteById(idProducto);
         return "redirect:/admin/productos";
     }
 
+    @GetMapping("/productos/reporte")
+    public ResponseEntity<byte[]> reporteProductos() {
+        List<Producto> productos = productoRepository.findAll();
+        byte[] pdf = reporteProductosService.generarReporte(productos);
+
+        String nombreArchivo = "reporte-productos-" +
+                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".pdf";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(ContentDisposition.inline().filename(nombreArchivo).build());
+
+        return ResponseEntity.ok().headers(headers).body(pdf);
+    }
+
+    @GetMapping("/productos/reporte/excel")
+    public ResponseEntity<byte[]> reporteProductosExcel() {
+        List<Producto> productos = productoRepository.findAll();
+        byte[] excel = reporteProductosExcelService.generarReporte(productos);
+
+        String nombreArchivo = "reporte-productos-" +
+                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(nombreArchivo).build());
+
+        return ResponseEntity.ok().headers(headers).body(excel);
+    }
+
     // ===== INVENTARIO =====
-    /** Lista los registros de inventario. */
     @GetMapping("/inventario")
     public String inventario(Model model) {
         model.addAttribute("inventarios", inventarioRepository.findAll());
@@ -287,7 +351,6 @@ public class AdminController {
         return "admin/inventario_admin";
     }
 
-    /** Crea un registro de inventario para un producto. */
     @PostMapping("/inventario/crear")
     public String crearInventario(
             @RequestParam Long idProducto,
@@ -304,7 +367,6 @@ public class AdminController {
         return "redirect:/admin/inventario";
     }
 
-    /** Actualiza las cantidades de un registro de inventario existente. */
     @PostMapping("/inventario/actualizar")
     public String actualizarInventario(
             @RequestParam Long idInventario,
@@ -318,40 +380,95 @@ public class AdminController {
         return "redirect:/admin/inventario";
     }
 
-    // ===== PEDIDOS =====
-    /** Lista los pedidos registrados. */
+    // ===== PEDIDOS (SOLO LECTURA PARA EL ADMIN) =====
     @GetMapping("/pedidos")
     public String pedidos(Model model) {
         List<Pedido> pedidos = pedidoRepository.findByOcultoFalseOrderByFechaPedidoDesc();
-        model.addAttribute("pedidos", pedidos);
+
+        List<PedidoVistaAdmin> vista = new ArrayList<>();
+        for (Pedido p : pedidos) {
+            PedidoVistaAdmin v = new PedidoVistaAdmin();
+            v.id = p.getId();
+            v.fecha = p.getFechaPedido();
+            v.estado = p.getEstado();
+
+            Usuario cliente = usuarioRepository.findById(p.getIdUsuario()).orElse(null);
+            v.clienteNombre = cliente != null ? cliente.getNombre() : "Cliente eliminado";
+
+            List<DetallePedido> detalles = detallePedidoRepository.findByIdPedido(p.getId());
+            v.cantidadProductos = detalles.stream().mapToInt(DetallePedido::getCantidad).sum();
+            v.total = detalles.stream()
+                    .map(d -> d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            vista.add(v);
+        }
+
+        model.addAttribute("pedidos", vista);
         model.addAttribute("nombre", getUsuarioActual().getNombre());
         return "admin/pedidos_admin";
     }
 
-    /** Cambia el estado de un pedido. */
-    @PostMapping("/pedidos/cambiarEstado")
-    public String cambiarEstadoPedido(@RequestParam Long idPedido, @RequestParam String estado) {
-        Pedido pedido = pedidoRepository.findById(idPedido).orElse(null);
-        if (pedido != null) {
-            pedido.setEstado(estado);
-            pedidoRepository.save(pedido);
+    @GetMapping("/pedidos/{id}/detalle")
+    @ResponseBody
+    public Map<String, Object> detallePedidoAdmin(@PathVariable Long id) {
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Pedido no encontrado"));
+
+        Usuario cliente = usuarioRepository.findById(pedido.getIdUsuario()).orElse(null);
+
+        List<DetallePedido> detalles = detallePedidoRepository.findByIdPedido(id);
+        List<Map<String, Object>> items = new ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
+
+        for (DetallePedido d : detalles) {
+            Producto producto = productoRepository.findById(d.getIdProducto()).orElse(null);
+
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("producto", producto != null ? producto.getNombre() : "Producto eliminado");
+            item.put("talla", producto != null ? producto.getTalla() : null);
+            item.put("color", producto != null ? producto.getColor() : null);
+            item.put("imagen", producto != null ? producto.getImagen() : null);
+            item.put("cantidad", d.getCantidad());
+            item.put("precioUnitario", d.getPrecioUnitario());
+
+            BigDecimal subtotal = d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad()));
+            item.put("subtotal", subtotal);
+            total = total.add(subtotal);
+
+            items.add(item);
         }
-        return "redirect:/admin/pedidos";
+
+        Map<String, Object> resultado = new LinkedHashMap<>();
+        resultado.put("idPedido", pedido.getId());
+        resultado.put("estado", pedido.getEstado());
+        resultado.put("clienteNombre", cliente != null ? cliente.getNombre() : "Cliente eliminado");
+        resultado.put("clienteCorreo", cliente != null ? cliente.getCorreo() : null);
+        resultado.put("clienteTelefono", cliente != null ? cliente.getTelefono() : null);
+        resultado.put("clienteDireccion", cliente != null ? cliente.getDireccion() : null);
+        resultado.put("items", items);
+        resultado.put("total", total);
+
+        return resultado;
     }
 
-    /** Oculta un pedido del listado activo (borrado logico). */
-    @PostMapping("/pedidos/ocultar")
-    public String ocultarPedido(@RequestParam Long idPedido) {
-        Pedido pedido = pedidoRepository.findById(idPedido).orElse(null);
-        if (pedido != null) {
-            pedido.setOculto(true);
-            pedidoRepository.save(pedido);
-        }
-        return "redirect:/admin/pedidos";
+    public static class PedidoVistaAdmin {
+        public Long id;
+        public LocalDateTime fecha;
+        public String estado;
+        public String clienteNombre;
+        public Integer cantidadProductos;
+        public BigDecimal total;
+
+        public Long getId() { return id; }
+        public LocalDateTime getFecha() { return fecha; }
+        public String getEstado() { return estado; }
+        public String getClienteNombre() { return clienteNombre; }
+        public Integer getCantidadProductos() { return cantidadProductos; }
+        public BigDecimal getTotal() { return total; }
     }
 
     // ===== DEVOLUCIONES =====
-    /** Lista las devoluciones registradas. */
     @GetMapping("/devoluciones")
     public String devoluciones(Model model) {
         List<Devolucion> devoluciones = devolucionRepository.findAllByOrderByFechaDevolucionDesc();
@@ -360,7 +477,6 @@ public class AdminController {
         return "admin/devoluciones_admin";
     }
 
-    /** Cambia el estado de una devolucion. */
     @PostMapping("/devoluciones/cambiarEstado")
     public String cambiarEstadoDevolucion(@RequestParam Long idDevolucion, @RequestParam String estado) {
         Devolucion devolucion = devolucionRepository.findById(idDevolucion).orElse(null);
@@ -372,7 +488,6 @@ public class AdminController {
     }
 
     // ===== PERFIL =====
-    /** Muestra los datos de perfil del administrador autenticado. */
     @GetMapping("/perfil")
     public String perfil(Model model) {
         Usuario usuario = getUsuarioActual();
@@ -381,7 +496,6 @@ public class AdminController {
         return "admin/perfil_admin";
     }
 
-    /** Actualiza los datos de perfil del administrador autenticado. */
     @PostMapping("/perfil/actualizar")
     public String actualizarPerfil(
             @RequestParam(required = false) String nombre,
@@ -399,7 +513,6 @@ public class AdminController {
             usuario.setContrasena(passwordEncoder.encode(password));
         }
 
-        // Si el correo cambia, actualizamos la autenticación de Spring Security
         if (!correo.isEmpty() && !correo.equals(usuario.getCorreo())) {
             usuario.setCorreo(correo);
             usuarioRepository.save(usuario);

@@ -32,11 +32,6 @@ import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.VentaRepository;
 
-/**
- * Controlador del panel del vendedor: gestion de pedidos (incluyendo el paso
- * a estado "Entregado", que genera automaticamente la venta), listado de
- * ventas, gestion de devoluciones y perfil propio.
- */
 @Controller
 @RequestMapping("/vendedor")
 public class VendedorController {
@@ -65,7 +60,6 @@ public class VendedorController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    /** Obtiene el {@link Usuario} actualmente autenticado a partir del contexto de seguridad. */
     private Usuario getUsuarioActual() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return usuarioRepository.findByCorreo(auth.getName());
@@ -75,7 +69,6 @@ public class VendedorController {
     // PANEL PRINCIPAL DEL VENDEDOR
     // ==========================================
 
-    /** Panel principal del vendedor. */
     @GetMapping("/panel")
     public String panelVendedor(Model model) {
         Usuario usuario = getUsuarioActual();
@@ -104,7 +97,6 @@ public class VendedorController {
     // PEDIDOS
     // ==========================================
 
-    /** Lista los pedidos junto con los datos del cliente y de los productos de cada uno. */
     @GetMapping("/pedidos")
     public String pedidos(
             @RequestParam(required = false) String estado,
@@ -164,12 +156,6 @@ public class VendedorController {
         return "vendedor/pedidos_vendedor";
     }
 
-    /**
-     * DTO auxiliar para la vista de pedidos del vendedor: agrupa el
-     * {@code Pedido}, los datos de contacto del cliente y sus líneas
-     * (productos) ya resueltas, para no forzar múltiples consultas desde
-     * la plantilla Thymeleaf.
-     */
     public static class PedidoVista {
         public Pedido pedido;
         public String clienteNombre;
@@ -180,7 +166,6 @@ public class VendedorController {
         public BigDecimal total;
     }
 
-    /** Línea de producto dentro de un {@link PedidoVista}. */
     public static class ItemPedido {
         public String nombreProducto;
         public String talla;
@@ -191,7 +176,6 @@ public class VendedorController {
         public BigDecimal subtotal;
     }
 
-    /** Cambia el estado de un pedido. Si el nuevo estado es "Entregado", genera automaticamente la Venta y sus DetalleVenta correspondientes (ver generarVentaDesdePedido) y marca el pedido como oculto. */
     @PostMapping("/pedidos/cambiarEstado")
     public String cambiarEstado(
             @RequestParam Long idPedido,
@@ -214,16 +198,6 @@ public class VendedorController {
         return "redirect:/vendedor/pedidos";
     }
 
-    /**
-     * Genera la {@code Venta} y sus {@code DetalleVenta} correspondientes a
-     * un pedido que acaba de marcarse como "Entregado". Es idempotente: si
-     * ya existe una venta asociada a ese pedido (buscada por id_pedido), no
-     * hace nada. El total de la venta se calcula sumando precio x cantidad
-     * de cada linea del pedido, y cada {@code DetallePedido} se replica como
-     * un {@code DetalleVenta}.
-     *
-     * @param pedido pedido que acaba de pasar a estado "Entregado"
-     */
     private void generarVentaDesdePedido(Pedido pedido) {
 
         Venta ventaExistente = ventaRepository.findByIdPedido(pedido.getId());
@@ -261,7 +235,6 @@ public class VendedorController {
     // VENTAS
     // ==========================================
 
-    /** Lista las ventas generadas, con datos de cliente, pedido y productos. */
     @GetMapping("/ventas")
     public String ventas(Model model) {
 
@@ -315,10 +288,6 @@ public class VendedorController {
         return "vendedor/ventas_vendedor";
     }
 
-    /**
-     * DTO auxiliar para la vista de ventas: agrupa la {@code Venta}, los
-     * datos de contacto del cliente y sus líneas de productos vendidos.
-     */
     public static class VentaVista {
         public Venta venta;
         public String clienteNombre;
@@ -329,7 +298,6 @@ public class VendedorController {
         public List<ItemVenta> items = new ArrayList<>();
     }
 
-    /** Línea de producto dentro de un {@link VentaVista}, con su subtotal ya calculado. */
     public static class ItemVenta {
         public String nombreProducto;
         public String talla;
@@ -344,7 +312,6 @@ public class VendedorController {
     // DEVOLUCIONES
     // ==========================================
 
-    /** Lista las devoluciones registradas por los clientes. */
     @GetMapping("/devoluciones")
     public String devoluciones(Model model) {
 
@@ -357,7 +324,6 @@ public class VendedorController {
         return "vendedor/devoluciones_vendedor";
     }
 
-    /** Cambia el estado (por ejemplo, aprobar o rechazar) de una devolucion. */
     @PostMapping("/devoluciones/cambiarEstado")
     public String cambiarEstadoDevolucion(
             @RequestParam Long idDevolucion,
@@ -378,7 +344,6 @@ public class VendedorController {
     // PERFIL
     // ==========================================
 
-    /** Muestra los datos de perfil del vendedor autenticado. */
     @GetMapping("/perfil")
     public String perfil(Model model) {
 
@@ -390,7 +355,6 @@ public class VendedorController {
         return "vendedor/perfil_vendedor";
     }
 
-    /** Actualiza los datos de perfil del vendedor autenticado. */
     @PostMapping("/perfil/actualizar")
     public String actualizarPerfil(
             @RequestParam(required = false) String correo,

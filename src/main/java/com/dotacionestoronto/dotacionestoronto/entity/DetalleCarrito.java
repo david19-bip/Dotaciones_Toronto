@@ -2,10 +2,6 @@ package com.dotacionestoronto.dotacionestoronto.entity;
 
 import jakarta.persistence.*;
 
-/**
- * Linea de detalle de un {@link Carrito}: relaciona un producto y la cantidad
- * seleccionada dentro de un carrito persistente.
- */
 @Entity
 @Table(name = "detalle_carrito")
 public class DetalleCarrito {

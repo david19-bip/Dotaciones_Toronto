@@ -26,10 +26,6 @@ import com.dotacionestoronto.dotacionestoronto.repository.MovimientoInventarioRe
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
 
-/**
- * Controlador del panel del bodeguero: gestion del inventario de productos
- * (creacion, edicion, habilitacion/inhabilitacion) y del perfil propio.
- */
 @Controller
 @RequestMapping("/bodeguero")
 public class BodegueroController {
@@ -49,13 +45,11 @@ public class BodegueroController {
     @Autowired
     private MovimientoInventarioRepository movimientoInventarioRepository;
 
-    /** Obtiene el {@link Usuario} actualmente autenticado a partir del contexto de seguridad. */
     private Usuario getUsuarioActual() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return usuarioRepository.findByCorreo(auth.getName());
     }
 
-    /** Panel principal del bodeguero, con el resumen del estado del inventario. */
     @GetMapping("/panel")
     public String panel(Model model) {
         List<Inventario> inventarios = inventarioRepository.findAll();
@@ -120,7 +114,6 @@ public class BodegueroController {
     }
 
     // ===== INVENTARIO =====
-    /** Lista los registros de inventario actualmente habilitados. */
     @GetMapping("/inventario")
     public String inventario(Model model) {
         model.addAttribute("inventarios", inventarioRepository.findAll());
@@ -130,7 +123,6 @@ public class BodegueroController {
         return "bodeguero/inventario_bodeguero";
     }
 
-    /** Crea un nuevo registro de inventario para un producto (cantidad actual y stock minimo). */
     @PostMapping("/inventario/crear")
     public String crearInventario(
             @RequestParam Long idProducto,
@@ -165,7 +157,6 @@ public class BodegueroController {
     }
 
     // ===== EDITAR REGISTRO COMPLETO Y REGISTRAR MOVIMIENTO =====
-    /** Edita las cantidades de un registro de inventario existente y deja constancia del cambio como un MovimientoInventario. */
     @PostMapping("/inventario/editar")
     public String editarInventario(
             @RequestParam Long idInventario,
@@ -208,7 +199,6 @@ public class BodegueroController {
     }
 
     // ===== INHABILITAR / HABILITAR REGISTRO =====
-    /** Habilita o inhabilita un registro de inventario, sin eliminarlo fisicamente. */
     @PostMapping("/inventario/cambiar-estado")
     public String cambiarEstadoInventario(@RequestParam Long idInventario) {
         Inventario inventario = inventarioRepository.findById(idInventario).orElse(null);
@@ -221,7 +211,6 @@ public class BodegueroController {
     }
 
     // ===== PERFIL =====
-    /** Muestra los datos de perfil del bodeguero autenticado. */
     @GetMapping("/perfil")
     public String perfil(Model model) {
         Usuario usuario = getUsuarioActual();
@@ -230,7 +219,6 @@ public class BodegueroController {
         return "bodeguero/perfil_bodeguero";
     }
 
-    /** Actualiza los datos de perfil del bodeguero autenticado. */
     @PostMapping("/perfil/actualizar")
     public String actualizarPerfil(
             @RequestParam String correo,

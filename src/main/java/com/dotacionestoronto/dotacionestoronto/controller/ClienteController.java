@@ -38,11 +38,6 @@ import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.VentaRepository;
 
-/**
- * Controlador del area del cliente: catalogo de productos, seguimiento de
- * pedidos, solicitud de devoluciones, perfil propio y pagina de contacto.
- * El carrito de compras se maneja aparte, en {@link CarritoController}.
- */
 @Controller
 @RequestMapping("/cliente")
 public class ClienteController {
@@ -71,7 +66,6 @@ public class ClienteController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    /** Obtiene el {@link Usuario} actualmente autenticado a partir del contexto de seguridad. */
     private Usuario getUsuarioActual() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return usuarioRepository.findByCorreo(auth.getName());
@@ -81,7 +75,6 @@ public class ClienteController {
     // PANEL PRINCIPAL DEL CLIENTE
     // ==========================================
 
-    /** Panel principal del cliente autenticado. */
     @GetMapping("/panel")
     public String panelCliente(Model model) {
         Usuario usuario = getUsuarioActual();
@@ -100,7 +93,6 @@ public class ClienteController {
     // PRODUCTOS
     // ==========================================
 
-    /** Muestra el catalogo de productos disponibles para comprar. */
     @GetMapping("/productos")
     public String productos(Model model) {
 
@@ -116,7 +108,6 @@ public class ClienteController {
     // PEDIDOS
     // ==========================================
 
-    /** Lista los pedidos realizados por el cliente autenticado. */
     @GetMapping("/pedidos")
     public String pedidos(Model model) {
         Usuario usuario = getUsuarioActual();
@@ -145,7 +136,6 @@ public class ClienteController {
         return "cliente/pedidos_cliente";
     }
 
-    /** (JSON) Devuelve el detalle de las lineas de un pedido especifico del cliente. */
     @GetMapping("/pedidos/{id}/detalle")
     @ResponseBody
     public List<Map<String, Object>> detallePedido(@PathVariable Long id) {
@@ -166,6 +156,9 @@ public class ClienteController {
 
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("producto", producto != null ? producto.getNombre() : "Producto eliminado");
+            item.put("talla", producto != null ? producto.getTalla() : null);
+            item.put("color", producto != null ? producto.getColor() : null);
+            item.put("imagen", producto != null ? producto.getImagen() : null);
             item.put("cantidad", d.getCantidad());
             item.put("precioUnitario", d.getPrecioUnitario());
             item.put("subtotal", d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad())));
@@ -179,7 +172,6 @@ public class ClienteController {
     // DEVOLUCIONES
     // ==========================================
 
-    /** Muestra el historial de devoluciones solicitadas por el cliente. */
     @GetMapping("/devoluciones")
     public String devoluciones(Model model) {
         Usuario usuario = getUsuarioActual();
@@ -217,7 +209,6 @@ public class ClienteController {
         return "cliente/devoluciones_cliente";
     }
 
-    /** (JSON) Lista los productos de un pedido entregado que son elegibles para devolucion. */
     @GetMapping("/devoluciones/productos/{idPedido}")
     @ResponseBody
     public List<Map<String, Object>> productosDePedido(@PathVariable Long idPedido) {
@@ -256,7 +247,6 @@ public class ClienteController {
         return resultado;
     }
 
-    /** Registra una nueva solicitud de devolucion sobre un producto ya comprado. */
     @PostMapping("/devoluciones/crear")
     public String crearDevolucion(
             @RequestParam Long idPedido,
@@ -317,7 +307,6 @@ public class ClienteController {
     // PERFIL
     // ==========================================
 
-    /** Muestra los datos de perfil del cliente autenticado. */
     @GetMapping("/perfil")
     public String perfil(Model model) {
         Usuario usuario = getUsuarioActual();
@@ -328,7 +317,6 @@ public class ClienteController {
         return "cliente/perfil_cliente";
     }
 
-    /** Actualiza los datos de perfil del cliente autenticado. */
     @PostMapping("/perfil/actualizar")
     public String actualizarPerfil(
             @RequestParam String correo,
@@ -380,7 +368,6 @@ public class ClienteController {
     // NOSOTROS + CONTÁCTANOS
     // ==========================================
 
-    /** Muestra la pagina institucional 'Nosotros'. */
     @GetMapping("/nosotros")
     public String verNosotros(Model model) {
         Usuario usuario = getUsuarioActual();
@@ -391,7 +378,6 @@ public class ClienteController {
         return "cliente/nosotros_cliente";
     }
 
-    /** Procesa el envio del formulario de contacto de la pagina 'Nosotros'. */
     @PostMapping("/nosotros/contacto")
     public String enviarContacto(
             @RequestParam String nombre,
@@ -412,11 +398,6 @@ public class ClienteController {
     // CLASES AUXILIARES INTERNAS PARA LAS VISTAS
     // ==========================================
 
-    /**
-     * DTO auxiliar usado solo para pintar la lista de pedidos del cliente
-     * en la vista (id, fecha, estado, cantidad de productos y total),
-     * evitando exponer directamente la entidad {@code Pedido}.
-     */
     public static class PedidoResumen {
         private Long id;
         private LocalDateTime fecha;
@@ -439,10 +420,6 @@ public class ClienteController {
         public BigDecimal getTotal() { return total; }
     }
 
-    /**
-     * DTO auxiliar usado para pintar el historial de devoluciones del
-     * cliente en la vista, con una referencia legible al pedido de origen.
-     */
     public static class DevolucionResumen {
         private Long id;
         private String pedidoRef;

@@ -9,10 +9,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Producto del catalogo de dotaciones (por ejemplo cascos, botas, uniformes),
- * con su precio, talla, color, imagen y estado de habilitacion.
- */
 @Entity
 @Table(name = "producto")
 public class Producto {

@@ -3,11 +3,6 @@ package com.dotacionestoronto.dotacionestoronto.entity;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
-/**
- * Solicitud de devolucion de uno o varios productos de una venta ya realizada,
- * asociada a un {@link DetalleVenta}. Incluye motivo, cantidad devuelta y
- * estado del tramite (por ejemplo: Pendiente, Aprobada, Rechazada).
- */
 @Entity
 @Table(name = "devolucion")
 public class Devolucion {

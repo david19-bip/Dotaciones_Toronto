@@ -9,10 +9,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Linea de detalle de un {@link Pedido}: producto, cantidad y precio unitario
- * pactado en el momento de generar el pedido.
- */
 @Entity
 @Table(name = "detalle_pedido")
 public class DetallePedido {

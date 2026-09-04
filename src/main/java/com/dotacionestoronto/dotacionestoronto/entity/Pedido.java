@@ -3,11 +3,6 @@ package com.dotacionestoronto.dotacionestoronto.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-/**
- * Pedido realizado por un cliente. Nace en estado "Pendiente" al finalizar el
- * carrito de compra y cambia de estado a medida que el vendedor lo gestiona.
- * Cuando llega a "Entregado" se genera automaticamente una {@link Venta}.
- */
 @Entity
 @Table(name = "pedido")
 public class Pedido {

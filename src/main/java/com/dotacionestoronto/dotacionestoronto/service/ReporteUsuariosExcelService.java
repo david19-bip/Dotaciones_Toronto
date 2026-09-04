@@ -15,12 +15,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Genera el reporte de usuarios en formato Excel (.xlsx) que se descarga
- * desde el panel de administración
- * (endpoint {@code GET /admin/usuarios/reporte/excel}).
- * Usa Apache POI (poi-ooxml) para construir el libro y la hoja de cálculo.
- */
 @Service
 public class ReporteUsuariosExcelService {
 
@@ -52,13 +46,6 @@ public class ReporteUsuariosExcelService {
             "/images/logo_blanco.png"
     };
 
-    /**
-     * Construye el archivo Excel con la tabla de usuarios recibida.
-     *
-     * @param usuarios listado de usuarios a incluir en el reporte
-     * @return el contenido del archivo .xlsx ya generado, listo para
-     *         enviarse como adjunto de descarga
-     */
     public byte[] generarReporte(List<Usuario> usuarios) {
         try (XSSFWorkbook libro = new XSSFWorkbook();
              ByteArrayOutputStream salida = new ByteArrayOutputStream()) {

@@ -27,12 +27,6 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfPageEventHelper;
 import com.lowagie.text.pdf.PdfWriter;
 
-/**
- * Genera el reporte de usuarios en formato PDF que se descarga desde el
- * panel de administración (endpoint {@code GET /admin/usuarios/reporte}).
- * Usa la librería OpenPDF (com.lowagie / com.github.librepdf) para construir
- * el documento, incluyendo estilos visuales propios del panel admin.
- */
 @Service
 public class ReporteUsuariosService {
 
@@ -73,13 +67,6 @@ public class ReporteUsuariosService {
     private final Font fChip = new Font(Font.HELVETICA, 8, Font.BOLD, BLANCO);
     private final Font fFooter = new Font(Font.HELVETICA, 7, Font.NORMAL, GRIS_TEXTO);
 
-    /**
-     * Construye el PDF con la tabla de usuarios recibida.
-     *
-     * @param usuarios listado de usuarios a incluir en el reporte
-     * @return el contenido del PDF ya generado, listo para enviarse como
-     *         adjunto de descarga (por ejemplo en un {@code ResponseEntity<byte[]>})
-     */
     public byte[] generarReporte(List<Usuario> usuarios) {
         Document documento = new Document(PageSize.A4, 28, 28, 0, 40);
         ByteArrayOutputStream salida = new ByteArrayOutputStream();
