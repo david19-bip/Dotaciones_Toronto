@@ -326,28 +326,64 @@ public class ClienteController {
             Model model) {
 
         Usuario usuario = getUsuarioActual();
-        boolean correoCambio = correo != null && !correo.isEmpty() && !correo.equals(usuario.getCorreo());
 
-        if (correo != null && !correo.isEmpty()) {
-            usuario.setCorreo(correo);
+        String correoLimpio = correo != null ? correo.trim() : "";
+        String telefonoLimpio = telefono != null ? telefono.trim() : "";
+        String direccionLimpia = direccion != null ? direccion.trim() : "";
+
+        // ===== Validaciones de servidor =====
+
+        if (!correoLimpio.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            model.addAttribute("error", "El correo electrónico no tiene un formato válido.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "cliente/perfil_cliente";
         }
 
-        if (telefono != null && !telefono.isEmpty()) {
-            usuario.setTelefono(telefono);
+        if (!telefonoLimpio.matches("^[0-9]{7,15}$")) {
+            model.addAttribute("error", "El teléfono debe contener solo números, entre 7 y 15 dígitos.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "cliente/perfil_cliente";
         }
 
-        if (direccion != null && !direccion.isEmpty()) {
-            usuario.setDireccion(direccion);
+        if (direccionLimpia.length() < 5) {
+            model.addAttribute("error", "La dirección debe tener al menos 5 caracteres.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "cliente/perfil_cliente";
         }
+
+        if (password != null && !password.isEmpty() && password.length() < 6) {
+            model.addAttribute("error", "La contraseña debe tener al menos 6 caracteres.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "cliente/perfil_cliente";
+        }
+
+        boolean correoCambio = !correoLimpio.equals(usuario.getCorreo());
+
+        if (correoCambio) {
+            Usuario existente = usuarioRepository.findByCorreo(correoLimpio);
+            if (existente != null && !existente.getId().equals(usuario.getId())) {
+                model.addAttribute("error", "Ese correo ya está en uso por otro usuario.");
+                model.addAttribute("usuario", usuario);
+                model.addAttribute("nombre", usuario.getNombre());
+                return "cliente/perfil_cliente";
+            }
+        }
+
+        usuario.setTelefono(telefonoLimpio);
+        usuario.setDireccion(direccionLimpia);
 
         if (password != null && !password.isEmpty()) {
             usuario.setContrasena(passwordEncoder.encode(password));
         }
 
-        usuarioRepository.save(usuario);
-
-        // Actualizar la sesión de Spring Security si el correo cambió
         if (correoCambio) {
+            usuario.setCorreo(correoLimpio);
+            usuarioRepository.save(usuario);
+
             Authentication authActual = SecurityContextHolder.getContext().getAuthentication();
             Authentication nuevaAuth = new UsernamePasswordAuthenticationToken(
                     usuario.getCorreo(),
@@ -355,6 +391,8 @@ public class ClienteController {
                     authActual.getAuthorities()
             );
             SecurityContextHolder.getContext().setAuthentication(nuevaAuth);
+        } else {
+            usuarioRepository.save(usuario);
         }
 
         model.addAttribute("usuario", usuario);

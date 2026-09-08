@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Devoluciones - Dotaciones Toronto</title>
+    <title>Perfil - Dotaciones Toronto</title>
     <!-- Estilos Externos -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
@@ -87,28 +87,34 @@
                 <div class="card-stat p-4">
                     <h6 class="fw-bold mb-3"><i class="bi bi-pencil me-2" style="color:#fa813b;"></i>Actualizar Información</h6>
 
+                    <div th:if="${error}" class="alert alert-danger p-2 fs-6" th:text="${error}"></div>
                     <div th:if="${exito}" class="alert alert-success p-2 fs-6" th:text="${exito}"></div>
 
-                    <form th:action="@{/cliente/perfil/actualizar}" method="post">
+                    <form id="formPerfil" th:action="@{/cliente/perfil/actualizar}" method="post" novalidate>
                        <div class="mb-3">
                             <label class="form-label fw-semibold">Correo electrónico</label>
-                            <input type="email" name="correo" class="form-control"
+                            <input type="email" id="correo" name="correo" class="form-control"
                                     th:value="${usuario.correo}" required>
+                            <div class="invalid-feedback">Correo inválido.</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Teléfono</label>
-                            <input type="text" name="telefono" class="form-control"
-                                    th:value="${usuario.telefono}">
+                            <input type="text" id="telefono" name="telefono" class="form-control"
+                                    th:value="${usuario.telefono}"
+                                    inputmode="numeric" minlength="7" maxlength="15" required>
+                            <div class="invalid-feedback">El teléfono debe tener entre 7 y 15 dígitos.</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Dirección</label>
-                            <input type="text" name="direccion" class="form-control"
-                                    th:value="${usuario.direccion}">
+                            <input type="text" id="direccion" name="direccion" class="form-control"
+                                    th:value="${usuario.direccion}" minlength="5" required>
+                            <div class="invalid-feedback">Mínimo 5 caracteres.</div>
                         </div>
                         <div class="mb-4">
                             <label class="form-label fw-semibold">Nueva Contraseña</label>
-                            <input type="password" name="password" class="form-control"
-                                    placeholder="Dejar vacío para no cambiar">
+                            <input type="password" id="password" name="password" class="form-control"
+                                    placeholder="Dejar vacío para no cambiar" minlength="6">
+                            <div class="invalid-feedback">Mínimo 6 caracteres.</div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 fw-semibold">
                             <i class="bi bi-save me-1"></i> Guardar Cambios
@@ -120,6 +126,91 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const form = document.getElementById("formPerfil");
+            const correo = document.getElementById("correo");
+            const telefono = document.getElementById("telefono");
+            const direccion = document.getElementById("direccion");
+            const password = document.getElementById("password");
+
+            function validarCampo(input, condicion) {
+                if (input.value.trim() === "" && input !== password) {
+                    input.classList.remove("is-invalid", "is-valid");
+                    return false;
+                }
+                if (condicion) {
+                    input.classList.remove("is-invalid");
+                    input.classList.add("is-valid");
+                    return true;
+                } else {
+                    input.classList.remove("is-valid");
+                    input.classList.add("is-invalid");
+                    return false;
+                }
+            }
+
+            const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const regexTelefono = /^[0-9]{7,15}$/;
+            const regexDireccion = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ#\s.-]+$/;
+
+            correo.addEventListener("input", () => {
+                validarCampo(correo, regexCorreo.test(correo.value.trim()));
+            });
+
+            // El teléfono no deja escribir nada que no sea número
+            telefono.addEventListener("input", function() {
+                this.value = this.value.replace(/[^0-9]/g, "");
+                validarCampo(telefono, regexTelefono.test(telefono.value.trim()));
+            });
+
+            // La dirección no deja escribir caracteres fuera de lo permitido
+            direccion.addEventListener("input", function() {
+                this.value = this.value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ#\s.-]/g, "");
+                validarCampo(direccion, regexDireccion.test(direccion.value.trim()));
+            });
+
+            password.addEventListener("input", () => {
+                const val = password.value;
+                if (val === "") {
+                    password.classList.remove("is-invalid", "is-valid");
+                } else if (val.length >= 6) {
+                    password.classList.remove("is-invalid");
+                    password.classList.add("is-valid");
+                } else {
+                    password.classList.remove("is-valid");
+                    password.classList.add("is-invalid");
+                }
+            });
+
+            form.addEventListener("submit", function(event) {
+                const esCorreoValid = regexCorreo.test(correo.value.trim());
+                const esTelefonoValid = regexTelefono.test(telefono.value.trim());
+                const esDireccionValid = regexDireccion.test(direccion.value.trim());
+
+                const passVal = password.value;
+                const esPasswordValid = (passVal === "" || passVal.length >= 6);
+
+                if (!esCorreoValid) correo.classList.add("is-invalid");
+                else correo.classList.add("is-valid");
+
+                if (!esTelefonoValid) telefono.classList.add("is-invalid");
+                else telefono.classList.add("is-valid");
+
+                if (!esDireccionValid) direccion.classList.add("is-invalid");
+                else direccion.classList.add("is-valid");
+
+                if (passVal !== "" && !esPasswordValid) {
+                    password.classList.add("is-invalid");
+                }
+
+                if (!esCorreoValid || !esTelefonoValid || !esDireccionValid || !esPasswordValid) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            });
+        });
+    </script>
     <script th:src="@{/js/loader.js}"></script>
 
 </body>

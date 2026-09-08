@@ -74,23 +74,21 @@ public class BodegueroController {
                 }
             }
 
-            int cantidadActual = (invEncontrado != null && invEncontrado.getCantidadActual() != null) 
+            int cantidadActual = (invEncontrado != null && invEncontrado.getCantidadActual() != null)
                                  ? invEncontrado.getCantidadActual() : 0;
-                                 
-            int stockMinimo = (invEncontrado != null && invEncontrado.getStockMinimo() != null) 
+
+            int stockMinimo = (invEncontrado != null && invEncontrado.getStockMinimo() != null)
                               ? invEncontrado.getStockMinimo() : 0;
 
-            // Conteo general de métricas
             if (cantidadActual == 0) {
                 totalAgotados++;
             } else if (cantidadActual <= stockMinimo) {
                 totalStockBajo++;
             }
 
-            // FILTRO CRÍTICO: Agregar a la tabla SOLO si está agotado (0) o si tiene stock bajo (<= stockMinimo)
             if (cantidadActual <= stockMinimo) {
                 Map<String, Object> fila = new HashMap<>();
-                
+
                 String nombreCompleto = prod.getNombre();
                 if (prod.getTalla() != null) nombreCompleto += " - " + prod.getTalla();
                 if (prod.getColor() != null) nombreCompleto += " (" + prod.getColor() + ")";
@@ -136,7 +134,6 @@ public class BodegueroController {
         inventario.setInhabilitado(false);
         inventarioRepository.save(inventario);
 
-        // Registrar movimiento inicial
         String nombreProd = "#" + idProducto;
         var prodOpt = productoRepository.findById(idProducto);
         if (prodOpt.isPresent()) {
@@ -167,8 +164,7 @@ public class BodegueroController {
         Inventario inventario = inventarioRepository.findById(idInventario).orElse(null);
         if (inventario != null) {
             int diferencia = cantidadActual - (inventario.getCantidadActual() != null ? inventario.getCantidadActual() : 0);
-            
-            // Determinar tipo de movimiento
+
             String tipo = "AJUSTE";
             if (diferencia > 0) tipo = "ENTRADA";
             else if (diferencia < 0) tipo = "SALIDA";
@@ -177,7 +173,6 @@ public class BodegueroController {
             inventario.setStockMinimo(stockMinimo);
             inventarioRepository.save(inventario);
 
-            // Buscar producto para obtener su nombre completo
             String nombreProd = "#" + inventario.getIdProducto();
             var prodOpt = productoRepository.findById(inventario.getIdProducto());
             if (prodOpt.isPresent()) {
@@ -185,7 +180,6 @@ public class BodegueroController {
                 nombreProd = p.getNombre() + " - " + p.getTalla() + " - " + p.getColor();
             }
 
-            // Registrar en el historial de movimientos
             MovimientoInventario mov = new MovimientoInventario();
             mov.setIdInventario(idInventario);
             mov.setNombreProducto(nombreProd);
@@ -228,20 +222,67 @@ public class BodegueroController {
             Model model) {
 
         Usuario usuario = getUsuarioActual();
-        if (!telefono.isEmpty()) usuario.setTelefono(telefono);
-        if (!direccion.isEmpty()) usuario.setDireccion(direccion);
+
+        String correoLimpio = correo != null ? correo.trim() : "";
+        String telefonoLimpio = telefono != null ? telefono.trim() : "";
+        String direccionLimpia = direccion != null ? direccion.trim() : "";
+
+        // ===== Validaciones de servidor =====
+
+        if (!correoLimpio.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            model.addAttribute("error", "El correo electrónico no tiene un formato válido.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "bodeguero/perfil_bodeguero";
+        }
+
+        if (!telefonoLimpio.matches("^[0-9]{7,15}$")) {
+            model.addAttribute("error", "El teléfono debe contener solo números, entre 7 y 15 dígitos.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "bodeguero/perfil_bodeguero";
+        }
+
+        if (direccionLimpia.length() < 5) {
+            model.addAttribute("error", "La dirección debe tener al menos 5 caracteres.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "bodeguero/perfil_bodeguero";
+        }
+
+        if (password != null && !password.isEmpty() && password.length() < 6) {
+            model.addAttribute("error", "La contraseña debe tener al menos 6 caracteres.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "bodeguero/perfil_bodeguero";
+        }
+
+        boolean correoCambio = !correoLimpio.equals(usuario.getCorreo());
+
+        if (correoCambio) {
+            Usuario existente = usuarioRepository.findByCorreo(correoLimpio);
+            if (existente != null && !existente.getId().equals(usuario.getId())) {
+                model.addAttribute("error", "Ese correo ya está en uso por otro usuario.");
+                model.addAttribute("usuario", usuario);
+                model.addAttribute("nombre", usuario.getNombre());
+                return "bodeguero/perfil_bodeguero";
+            }
+        }
+
+        usuario.setTelefono(telefonoLimpio);
+        usuario.setDireccion(direccionLimpia);
+
         if (password != null && !password.isEmpty()) {
             usuario.setContrasena(passwordEncoder.encode(password));
         }
 
-        // Si el correo cambia, actualizamos la autenticación de Spring Security
-        if (!correo.isEmpty() && !correo.equals(usuario.getCorreo())) {
-            usuario.setCorreo(correo);
+        if (correoCambio) {
+            usuario.setCorreo(correoLimpio);
             usuarioRepository.save(usuario);
 
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             Authentication newAuth = new UsernamePasswordAuthenticationToken(
-                    correo,
+                    correoLimpio,
                     auth.getCredentials(),
                     auth.getAuthorities()
             );

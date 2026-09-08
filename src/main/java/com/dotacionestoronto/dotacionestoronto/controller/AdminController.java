@@ -631,20 +631,71 @@ public class AdminController {
             Model model) {
 
         Usuario usuario = getUsuarioActual();
-        if (nombre != null && !nombre.isEmpty()) usuario.setNombre(nombre);
-        if (!telefono.isEmpty()) usuario.setTelefono(telefono);
-        if (!direccion.isEmpty()) usuario.setDireccion(direccion);
+
+        String correoLimpio = correo != null ? correo.trim() : "";
+        String telefonoLimpio = telefono != null ? telefono.trim() : "";
+        String direccionLimpia = direccion != null ? direccion.trim() : "";
+
+        // ===== Validaciones de servidor (espejo de las del formulario,
+        // pero que no se pueden saltar deshabilitando JS) =====
+
+        if (!correoLimpio.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            model.addAttribute("error", "El correo electrónico no tiene un formato válido.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "admin/perfil_admin";
+        }
+
+        if (!telefonoLimpio.matches("^[0-9]{7,15}$")) {
+            model.addAttribute("error", "El teléfono debe contener solo números, entre 7 y 15 dígitos.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "admin/perfil_admin";
+        }
+
+        if (direccionLimpia.isEmpty() || !direccionLimpia.matches("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ#\\s.-]+$")) {
+            model.addAttribute("error", "La dirección contiene caracteres no permitidos.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "admin/perfil_admin";
+        }
+
+        if (password != null && !password.isEmpty() && password.length() < 6) {
+            model.addAttribute("error", "La contraseña debe tener al menos 6 caracteres.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "admin/perfil_admin";
+        }
+
+        boolean correoCambio = !correoLimpio.equals(usuario.getCorreo());
+
+        if (correoCambio) {
+            Usuario existente = usuarioRepository.findByCorreo(correoLimpio);
+            if (existente != null && !existente.getId().equals(usuario.getId())) {
+                model.addAttribute("error", "Ese correo ya está en uso por otro usuario.");
+                model.addAttribute("usuario", usuario);
+                model.addAttribute("nombre", usuario.getNombre());
+                return "admin/perfil_admin";
+            }
+        }
+
+        if (nombre != null && !nombre.isEmpty()) {
+            usuario.setNombre(nombre);
+        }
+        usuario.setTelefono(telefonoLimpio);
+        usuario.setDireccion(direccionLimpia);
+
         if (password != null && !password.isEmpty()) {
             usuario.setContrasena(passwordEncoder.encode(password));
         }
 
-        if (!correo.isEmpty() && !correo.equals(usuario.getCorreo())) {
-            usuario.setCorreo(correo);
+        if (correoCambio) {
+            usuario.setCorreo(correoLimpio);
             usuarioRepository.save(usuario);
 
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             Authentication newAuth = new UsernamePasswordAuthenticationToken(
-                    correo,
+                    correoLimpio,
                     auth.getCredentials(),
                     auth.getAuthorities()
             );
