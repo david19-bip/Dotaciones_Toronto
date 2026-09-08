@@ -114,6 +114,11 @@
                 <div class="card border-0 shadow-sm rounded-4 p-4">
                     <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-pencil-square me-2 text-primary"></i>Actualizar Información</h6>
 
+                    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show p-3 mb-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${error}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+
                     <div th:if="${exito}" class="alert alert-success alert-dismissible fade show p-3 mb-3" role="alert">
                         <i class="bi bi-check-circle-fill me-2"></i><span th:text="${exito}"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -130,19 +135,20 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold small text-secondary">Teléfono</label>
                             <input type="text" id="telefono" name="telefono" class="form-control"
-                                   th:value="${usuario.telefono}" required>
-                            <div class="invalid-feedback">El teléfono solo debe contener números (entre 7 y 15 dígitos).</div>
+                                   th:value="${usuario.telefono}"
+                                   inputmode="numeric" minlength="7" maxlength="15" required>
+                            <div class="invalid-feedback">El teléfono debe tener entre 7 y 15 dígitos.</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold small text-secondary">Dirección</label>
                             <input type="text" id="direccion" name="direccion" class="form-control"
-                                   th:value="${usuario.direccion}" required>
+                                   th:value="${usuario.direccion}" minlength="5" required>
                             <div class="invalid-feedback">Ingrese una dirección válida (letras, números y caracteres como # o -).</div>
                         </div>
                         <div class="mb-4">
                             <label class="form-label fw-semibold small text-secondary">Nueva Contraseña</label>
                             <input type="password" id="password" name="password" class="form-control"
-                                   placeholder="Dejar en blanco si no desea cambiarla">
+                                   placeholder="Dejar en blanco si no desea cambiarla" minlength="6">
                             <div class="invalid-feedback">La contraseña debe tener al menos 6 caracteres si decide cambiarla.</div>
                         </div>
                         <button type="submit" id="btnSubmit" class="btn btn-primary w-100 fw-semibold py-2">
@@ -157,7 +163,7 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Script de Validaciones Corregido -->
+    <!-- Script de Validaciones (solo mejora la experiencia; el backend valida de verdad) -->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const form = document.getElementById("formPerfil");
@@ -190,11 +196,15 @@
                 validarCampo(correo, regexCorreo.test(correo.value.trim()));
             });
 
-            telefono.addEventListener("input", () => {
+            // El teléfono no deja escribir nada que no sea número
+            telefono.addEventListener("input", function() {
+                this.value = this.value.replace(/[^0-9]/g, "");
                 validarCampo(telefono, regexTelefono.test(telefono.value.trim()));
             });
 
-            direccion.addEventListener("input", () => {
+            // La dirección no deja escribir caracteres fuera de lo permitido
+            direccion.addEventListener("input", function() {
+                this.value = this.value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ#\s.-]/g, "");
                 validarCampo(direccion, regexDireccion.test(direccion.value.trim()));
             });
 

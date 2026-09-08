@@ -365,33 +365,63 @@ public class VendedorController {
 
         Usuario usuario = getUsuarioActual();
 
-        boolean correoCambio = correo != null && !correo.isEmpty() && !correo.equals(usuario.getCorreo());
+        String correoLimpio = correo != null ? correo.trim() : usuario.getCorreo();
+        String telefonoLimpio = telefono != null ? telefono.trim() : usuario.getTelefono();
+        String direccionLimpia = direccion != null ? direccion.trim() : usuario.getDireccion();
 
-        if (correo != null && !correo.isEmpty()) {
-            usuario.setCorreo(correo);
+        // ===== Validaciones de servidor =====
+
+        if (!correoLimpio.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            model.addAttribute("error", "El correo electrónico no tiene un formato válido.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "vendedor/perfil_vendedor";
         }
 
-        if (telefono != null && !telefono.isEmpty()) {
-            usuario.setTelefono(telefono);
+        if (!telefonoLimpio.matches("^[0-9]{7,15}$")) {
+            model.addAttribute("error", "El teléfono debe contener solo números, entre 7 y 15 dígitos.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "vendedor/perfil_vendedor";
         }
 
-        if (direccion != null && !direccion.isEmpty()) {
-            usuario.setDireccion(direccion);
+        if (direccionLimpia == null || direccionLimpia.trim().length() < 5) {
+            model.addAttribute("error", "La dirección debe tener al menos 5 caracteres.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "vendedor/perfil_vendedor";
         }
+
+        if (password != null && !password.isEmpty() && password.length() < 6) {
+            model.addAttribute("error", "La contraseña debe tener al menos 6 caracteres.");
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("nombre", usuario.getNombre());
+            return "vendedor/perfil_vendedor";
+        }
+
+        boolean correoCambio = !correoLimpio.equals(usuario.getCorreo());
+
+        if (correoCambio) {
+            Usuario existente = usuarioRepository.findByCorreo(correoLimpio);
+            if (existente != null && !existente.getId().equals(usuario.getId())) {
+                model.addAttribute("error", "Ese correo ya está en uso por otro usuario.");
+                model.addAttribute("usuario", usuario);
+                model.addAttribute("nombre", usuario.getNombre());
+                return "vendedor/perfil_vendedor";
+            }
+        }
+
+        usuario.setTelefono(telefonoLimpio);
+        usuario.setDireccion(direccionLimpia);
 
         if (password != null && !password.isEmpty()) {
-            usuario.setContrasena(
-                    passwordEncoder.encode(password)
-            );
+            usuario.setContrasena(passwordEncoder.encode(password));
         }
 
-        usuarioRepository.save(usuario);
-
-        // Si el correo cambió, hay que actualizar también la sesión de
-        // Spring Security, porque de lo contrario sigue "recordando" el
-        // correo viejo y las siguientes búsquedas de usuario fallan
-        // (findByCorreo devuelve null -> NullPointerException).
         if (correoCambio) {
+            usuario.setCorreo(correoLimpio);
+            usuarioRepository.save(usuario);
+
             Authentication authActual = SecurityContextHolder.getContext().getAuthentication();
             Authentication nuevaAuth = new UsernamePasswordAuthenticationToken(
                     usuario.getCorreo(),
@@ -399,14 +429,13 @@ public class VendedorController {
                     authActual.getAuthorities()
             );
             SecurityContextHolder.getContext().setAuthentication(nuevaAuth);
+        } else {
+            usuarioRepository.save(usuario);
         }
 
         model.addAttribute("usuario", usuario);
         model.addAttribute("nombre", usuario.getNombre());
-        model.addAttribute(
-                "exito",
-                "Perfil actualizado correctamente."
-        );
+        model.addAttribute("exito", "Perfil actualizado correctamente.");
 
         return "vendedor/perfil_vendedor";
     }

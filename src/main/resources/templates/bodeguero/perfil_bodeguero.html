@@ -106,6 +106,12 @@
             </h6>
 
             <div
+              th:if="${error}"
+              class="alert alert-danger p-2 fs-6"
+              th:text="${error}"
+            ></div>
+
+            <div
               th:if="${exito}"
               class="alert alert-success p-2 fs-6"
               th:text="${exito}"
@@ -118,7 +124,8 @@
                   type="email"
                   name="correo"
                   class="form-control"
-                  th:placeholder="${usuario.correo}"
+                  th:value="${usuario.correo}"
+                  required
                 />
               </div>
               <div class="mb-3">
@@ -127,7 +134,8 @@
                   type="text"
                   name="telefono"
                   class="form-control"
-                  th:placeholder="${usuario.telefono}"
+                  th:value="${usuario.telefono}"
+                  required
                 />
               </div>
               <div class="mb-3">
@@ -136,7 +144,8 @@
                   type="text"
                   name="direccion"
                   class="form-control"
-                  th:placeholder="${usuario.direccion}"
+                  th:value="${usuario.direccion}"
+                  required
                 />
               </div>
               <div class="mb-4">
