@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,17 +35,21 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.dotacionestoronto.dotacionestoronto.entity.DetallePedido;
+import com.dotacionestoronto.dotacionestoronto.entity.DetalleVenta;
 import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
 import com.dotacionestoronto.dotacionestoronto.entity.Inventario;
 import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
 import com.dotacionestoronto.dotacionestoronto.entity.Producto;
 import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
+import com.dotacionestoronto.dotacionestoronto.entity.Venta;
 import com.dotacionestoronto.dotacionestoronto.repository.DetallePedidoRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.DetalleVentaRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.DevolucionRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.InventarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.VentaRepository;
 import com.dotacionestoronto.dotacionestoronto.service.ReporteProductosExcelService;
 import com.dotacionestoronto.dotacionestoronto.service.ReporteProductosService;
 import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosExcelService;
@@ -71,6 +76,12 @@ public class AdminController {
 
     @Autowired
     private DetallePedidoRepository detallePedidoRepository;
+
+    @Autowired
+    private VentaRepository ventaRepository;
+
+    @Autowired
+    private DetalleVentaRepository detalleVentaRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -463,6 +474,120 @@ public class AdminController {
         public Long getId() { return id; }
         public LocalDateTime getFecha() { return fecha; }
         public String getEstado() { return estado; }
+        public String getClienteNombre() { return clienteNombre; }
+        public Integer getCantidadProductos() { return cantidadProductos; }
+        public BigDecimal getTotal() { return total; }
+    }
+
+    // ===== VENTAS (SOLO LECTURA PARA EL ADMIN — se generan al entregar un pedido) =====
+    @GetMapping("/ventas")
+    public String ventas(Model model) {
+        List<Venta> ventas = ventaRepository.findAllByOrderByFechaVentaDesc();
+
+        List<VentaVistaAdmin> vista = new ArrayList<>();
+        for (Venta v : ventas) {
+            VentaVistaAdmin vv = new VentaVistaAdmin();
+            vv.id = v.getId();
+            vv.idPedido = v.getIdPedido();
+            vv.fecha = v.getFechaVenta();
+
+            Usuario cliente = usuarioRepository.findById(v.getIdUsuario()).orElse(null);
+            vv.clienteNombre = cliente != null ? cliente.getNombre() : "Cliente eliminado";
+
+            List<DetalleVenta> detalles = detalleVentaRepository.findByIdVenta(v.getId());
+            vv.cantidadProductos = detalles.stream().mapToInt(DetalleVenta::getCantidad).sum();
+            vv.total = detalles.stream()
+                    .map(d -> d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            vista.add(vv);
+        }
+
+        model.addAttribute("ventas", vista);
+        model.addAttribute("nombre", getUsuarioActual().getNombre());
+        return "admin/ventas_admin";
+    }
+
+    @GetMapping("/ventas/grafico")
+    @ResponseBody
+    public List<Map<String, Object>> graficoVentas() {
+        List<Venta> ventasDesc = ventaRepository.findAllByOrderByFechaVentaDesc();
+        List<Venta> ventasAsc = new ArrayList<>(ventasDesc);
+        Collections.reverse(ventasAsc);
+
+        List<Map<String, Object>> datos = new ArrayList<>();
+        for (Venta v : ventasAsc) {
+            List<DetalleVenta> detalles = detalleVentaRepository.findByIdVenta(v.getId());
+            BigDecimal total = detalles.stream()
+                    .map(d -> d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            Map<String, Object> punto = new LinkedHashMap<>();
+            punto.put("fecha", v.getFechaVenta().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+            punto.put("total", total);
+            datos.add(punto);
+        }
+        return datos;
+    }
+
+    @GetMapping("/ventas/{id}/detalle")
+    @ResponseBody
+    public Map<String, Object> detalleVentaAdmin(@PathVariable Long id) {
+        Venta venta = ventaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+
+        Usuario cliente = usuarioRepository.findById(venta.getIdUsuario()).orElse(null);
+        Pedido pedido = venta.getIdPedido() != null
+                ? pedidoRepository.findById(venta.getIdPedido()).orElse(null)
+                : null;
+
+        List<DetalleVenta> detalles = detalleVentaRepository.findByIdVenta(id);
+        List<Map<String, Object>> items = new ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
+
+        for (DetalleVenta d : detalles) {
+            Producto producto = productoRepository.findById(d.getIdProducto()).orElse(null);
+
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("producto", producto != null ? producto.getNombre() : "Producto eliminado");
+            item.put("talla", producto != null ? producto.getTalla() : null);
+            item.put("color", producto != null ? producto.getColor() : null);
+            item.put("imagen", producto != null ? producto.getImagen() : null);
+            item.put("cantidad", d.getCantidad());
+            item.put("precioUnitario", d.getPrecioUnitario());
+
+            BigDecimal subtotal = d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad()));
+            item.put("subtotal", subtotal);
+            total = total.add(subtotal);
+
+            items.add(item);
+        }
+
+        Map<String, Object> resultado = new LinkedHashMap<>();
+        resultado.put("idVenta", venta.getId());
+        resultado.put("idPedido", venta.getIdPedido());
+        resultado.put("pedidoEstado", pedido != null ? pedido.getEstado() : null);
+        resultado.put("clienteNombre", cliente != null ? cliente.getNombre() : "Cliente eliminado");
+        resultado.put("clienteCorreo", cliente != null ? cliente.getCorreo() : null);
+        resultado.put("clienteTelefono", cliente != null ? cliente.getTelefono() : null);
+        resultado.put("clienteDireccion", cliente != null ? cliente.getDireccion() : null);
+        resultado.put("items", items);
+        resultado.put("total", total);
+
+        return resultado;
+    }
+
+    public static class VentaVistaAdmin {
+        public Long id;
+        public Long idPedido;
+        public LocalDateTime fecha;
+        public String clienteNombre;
+        public Integer cantidadProductos;
+        public BigDecimal total;
+
+        public Long getId() { return id; }
+        public Long getIdPedido() { return idPedido; }
+        public LocalDateTime getFecha() { return fecha; }
         public String getClienteNombre() { return clienteNombre; }
         public Integer getCantidadProductos() { return cantidadProductos; }
         public BigDecimal getTotal() { return total; }
