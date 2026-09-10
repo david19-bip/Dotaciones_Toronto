@@ -226,7 +226,11 @@ public class AdminController {
     // ===== PRODUCTOS =====
     @GetMapping("/productos")
     public String productos(Model model) {
-        model.addAttribute("productos", productoRepository.findAll());
+        // Los productos inhabilitados se conservan en la base de datos (por el
+        // historial de pedidos/ventas) pero se separan en su propia pestaña
+        // para poder reactivarlos cuando haga falta.
+        model.addAttribute("productos", productoRepository.findByInhabilitadoFalseOrderByIdDesc());
+        model.addAttribute("productosInhabilitados", productoRepository.findByInhabilitadoTrueOrderByIdDesc());
         model.addAttribute("nombre", getUsuarioActual().getNombre());
         return "admin/productos_admin";
     }
@@ -305,9 +309,47 @@ public class AdminController {
         return "redirect:/admin/productos";
     }
 
-    @PostMapping("/productos/eliminar")
-    public String eliminarProducto(@RequestParam Long idProducto) {
-        productoRepository.deleteById(idProducto);
+    // Reemplaza la eliminación física: el producto no se borra de la base de
+    // datos (así se conservan intactos los pedidos, ventas y devoluciones que
+    // ya lo referencian), simplemente se marca como inhabilitado y deja de
+    // aparecer en el catálogo administrable.
+    @PostMapping("/productos/inhabilitar")
+    public String inhabilitarProducto(
+            @RequestParam Long idProducto,
+            RedirectAttributes redirectAttributes) {
+
+        Producto producto = productoRepository.findById(idProducto).orElse(null);
+
+        if (producto == null) {
+            redirectAttributes.addFlashAttribute("error", "No se encontró el producto a inhabilitar.");
+            return "redirect:/admin/productos";
+        }
+
+        producto.setInhabilitado(true);
+        productoRepository.save(producto);
+
+        redirectAttributes.addFlashAttribute("exito", "Producto inhabilitado correctamente.");
+        return "redirect:/admin/productos";
+    }
+
+    // Reactiva un producto previamente inhabilitado: vuelve a aparecer en el
+    // catálogo de administración y en el catálogo del cliente.
+    @PostMapping("/productos/habilitar")
+    public String habilitarProducto(
+            @RequestParam Long idProducto,
+            RedirectAttributes redirectAttributes) {
+
+        Producto producto = productoRepository.findById(idProducto).orElse(null);
+
+        if (producto == null) {
+            redirectAttributes.addFlashAttribute("error", "No se encontró el producto a habilitar.");
+            return "redirect:/admin/productos";
+        }
+
+        producto.setInhabilitado(false);
+        productoRepository.save(producto);
+
+        redirectAttributes.addFlashAttribute("exito", "Producto habilitado correctamente.");
         return "redirect:/admin/productos";
     }
 
