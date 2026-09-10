@@ -8,6 +8,32 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link th:href="@{/css/admin.css}" rel="stylesheet">
     <style>
+        .btn-reporte {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+            color: #e2b96f;
+            border: 1px solid rgba(226, 185, 111, 0.5);
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-reporte:hover {
+            color: #1a1a2e;
+            background: #e2b96f;
+            border-color: #e2b96f;
+        }
+
+        .btn-reporte-excel {
+            background: linear-gradient(135deg, #1a1a2e 0%, #1d6f42 100%);
+            color: #ffffff;
+            border: 1px solid rgba(29, 111, 66, 0.5);
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-reporte-excel:hover {
+            color: #1a1a2e;
+            background: #34c37a;
+            border-color: #34c37a;
+        }
+
         #tablaVentas tbody tr {
             transition: background 0.15s ease;
         }
@@ -213,9 +239,17 @@
                 <h3 class="fw-bold text-dark mb-1">Historial de Ventas</h3>
                 <p class="text-muted mb-0">Bienvenido, <span class="fw-semibold text-dark" th:text="${nombre}"></span></p>
             </div>
-            <span class="badge-solo-lectura">
-                <i class="bi bi-eye"></i> Solo lectura — las ventas se generan automáticamente al entregar un pedido
-            </span>
+            <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                <span class="badge-solo-lectura">
+                    <i class="bi bi-eye"></i> Solo lectura — las ventas se generan automáticamente al entregar un pedido
+                </span>
+                <button class="btn btn-reporte shadow-sm" onclick="generarPDFVentas()">
+                    <i class="bi bi-file-earmark-pdf-fill me-1"></i> Reporte PDF
+                </button>
+                <a class="btn btn-reporte-excel shadow-sm" th:href="@{/admin/ventas/reporte/excel}">
+                    <i class="bi bi-file-earmark-excel-fill me-1"></i> Reporte Excel
+                </a>
+            </div>
         </div>
 
         <!-- Gráfico de ventas por fecha -->
@@ -425,6 +459,77 @@
         }
 
         cargarGraficoVentas();
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        function generarPDFVentas() {
+            const { jsPDF } = window.jspdf;
+            const documento = new jsPDF('p', 'mm', 'a4');
+            const anchoPagina = documento.internal.pageSize.getWidth();
+
+            documento.setFillColor(26, 26, 46);
+            documento.rect(0, 0, anchoPagina, 35, 'F');
+            documento.setTextColor(255, 255, 255);
+            documento.setFont('helvetica', 'bold');
+            documento.setFontSize(18);
+            documento.text('DOTACIONES TORONTO', anchoPagina / 2, 15, { align: 'center' });
+            documento.setFont('helvetica', 'normal');
+            documento.setFontSize(11);
+            documento.text('Reporte de Ventas', anchoPagina / 2, 23, { align: 'center' });
+            documento.setFontSize(9);
+            documento.text('Generado el: ' + new Date().toLocaleDateString('es-CO'), anchoPagina / 2, 30, { align: 'center' });
+
+            let y = 45;
+            const canvas = document.getElementById('graficoVentas');
+            if (canvas && canvas.style.display !== 'none') {
+                documento.setTextColor(30, 41, 59);
+                documento.setFont('helvetica', 'bold');
+                documento.setFontSize(12);
+                documento.text('Gráfica de Ventas por Fecha', 14, y);
+                y += 6;
+                const imagen = canvas.toDataURL('image/png');
+                const anchoImagen = anchoPagina - 28;
+                const altoImagen = (canvas.height * anchoImagen) / canvas.width;
+                documento.addImage(imagen, 'PNG', 14, y, anchoImagen, altoImagen);
+                y += altoImagen + 10;
+            }
+
+            documento.setTextColor(30, 41, 59);
+            documento.setFontSize(12);
+            documento.text('Detalle de Ventas', 14, y);
+            y += 8;
+            documento.setFillColor(22, 33, 62);
+            documento.rect(14, y, anchoPagina - 28, 8, 'F');
+            documento.setTextColor(255, 255, 255);
+            documento.setFontSize(8);
+            ['# Venta', '# Pedido', 'Cliente', 'Fecha', 'Productos', 'Total'].forEach((texto, indice) => {
+                documento.text(texto, [16, 31, 51, 94, 132, 162][indice], y + 5.5);
+            });
+            y += 8;
+
+            document.querySelectorAll('#tablaVentas tbody tr').forEach((fila, indice) => {
+                const celdas = fila.querySelectorAll('td');
+                if (celdas.length < 6) return;
+                if (y > 270) {
+                    documento.addPage();
+                    y = 20;
+                }
+                documento.setFillColor(...(indice % 2 === 0 ? [248, 250, 252] : [255, 255, 255]));
+                documento.rect(14, y, anchoPagina - 28, 7, 'F');
+                documento.setTextColor(30, 41, 59);
+                documento.setFont('helvetica', 'normal');
+                documento.setFontSize(7);
+                [16, 31, 51, 94, 132, 162].forEach((x, columna) => {
+                    documento.text(celdas[columna].innerText.trim().substring(0, 22), x, y + 5);
+                });
+                y += 7;
+            });
+
+            documento.setTextColor(150, 150, 150);
+            documento.setFontSize(8);
+            documento.text('© Dotaciones Toronto 2026', anchoPagina / 2, 290, { align: 'center' });
+            documento.save('reporte_ventas.pdf');
+        }
     </script>
 </body>
 </html>

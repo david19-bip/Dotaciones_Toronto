@@ -137,6 +137,27 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
+        <!-- Pestañas: Activos / Inhabilitados -->
+        <ul class="nav nav-tabs mb-3" id="tabsProductos" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tab-activos-btn" data-bs-toggle="tab"
+                        data-bs-target="#tab-activos" type="button" role="tab">
+                    <i class="bi bi-box-seam me-1"></i> Activos
+                    <span class="badge bg-secondary ms-1" th:text="${#lists.size(productos)}"></span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-inhabilitados-btn" data-bs-toggle="tab"
+                        data-bs-target="#tab-inhabilitados" type="button" role="tab">
+                    <i class="bi bi-slash-circle me-1"></i> Inhabilitados
+                    <span class="badge bg-secondary ms-1" th:text="${#lists.size(productosInhabilitados)}"></span>
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="tabsProductosContent">
+        <div class="tab-pane fade show active" id="tab-activos" role="tabpanel">
+
         <!-- Barra de búsqueda y filtros -->
         <div class="filtros-card shadow-sm mb-3">
             <div class="row g-2 align-items-center">
@@ -228,11 +249,13 @@
                                                 th:text="${producto.estado == 'Disponible' ? 'Agotado' : 'Disponible'}">
                                             </button>
                                         </form>
-                                        <form th:action="@{/admin/productos/eliminar}" method="post"
-                                              onsubmit="return confirm('¿Está seguro de eliminar este producto?')">
+
+                                        <!-- Inhabilitar (reemplaza la eliminación física del producto) -->
+                                        <form th:action="@{/admin/productos/inhabilitar}" method="post"
+                                              onsubmit="return confirm('¿Está seguro de inhabilitar este producto? Dejará de mostrarse en el catálogo.')">
                                             <input type="hidden" name="idProducto" th:value="${producto.id}">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
-                                                <i class="bi bi-trash"></i>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Inhabilitar">
+                                                <i class="bi bi-slash-circle"></i>
                                             </button>
                                         </form>
                                     </div>
@@ -248,6 +271,63 @@
                 </div>
             </div>
         </div>
+
+        </div> <!-- /tab-activos -->
+
+        <div class="tab-pane fade" id="tab-inhabilitados" role="tabpanel">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-0 overflow-hidden" style="border-radius: 14px;">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="p-3 ps-4"># ID</th>
+                                    <th class="p-3">Imagen</th>
+                                    <th class="p-3">Nombre</th>
+                                    <th class="p-3">Precio</th>
+                                    <th class="p-3 text-center">Talla</th>
+                                    <th class="p-3">Color</th>
+                                    <th class="p-3 text-end pe-4">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(productosInhabilitados)}">
+                                    <td colspan="7" class="text-center p-4 text-muted">No hay productos inhabilitados.</td>
+                                </tr>
+                                <tr th:each="producto : ${productosInhabilitados}">
+                                    <td class="p-3 ps-4 fw-bold text-secondary" th:text="${'#' + producto.id}"></td>
+                                    <td class="p-3">
+                                        <img th:if="${producto.imagen != null}"
+                                             th:src="@{'/' + ${producto.imagen}}"
+                                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; opacity: 0.6;">
+                                        <span th:unless="${producto.imagen != null}" class="text-muted small">Sin imagen</span>
+                                    </td>
+                                    <td class="p-3 fw-semibold text-muted" th:text="${producto.nombre}"></td>
+                                    <td class="p-3 fw-bold text-muted">
+                                        $<span th:text="${#numbers.formatDecimal(producto.precio, 1, 'COMMA', 0, 'POINT')}"></span>
+                                    </td>
+                                    <td class="p-3 text-center">
+                                        <span class="badge bg-light text-dark border" th:text="${producto.talla}"></span>
+                                    </td>
+                                    <td class="p-3 text-capitalize text-muted" th:text="${producto.color}"></td>
+                                    <td class="p-3 text-end pe-4">
+                                        <form th:action="@{/admin/productos/habilitar}" method="post">
+                                            <input type="hidden" name="idProducto" th:value="${producto.id}">
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Habilitar">
+                                                <i class="bi bi-check-circle me-1"></i> Habilitar
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- /tab-inhabilitados -->
+
+        </div> <!-- /tabsProductosContent -->
+
     </div>
 
     <!-- Modal Crear Producto -->
