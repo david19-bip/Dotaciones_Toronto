@@ -17,29 +17,33 @@
 
     <!-- Sidebar -->
     <div class="sidebar">
-        <div class="sidebar-brand">
-            <img th:src="@{/images/logo blanco.png}" alt="Logo Dotaciones Toronto" class="brand-logo">
-            <div class="brand-title">Dotaciones Toronto</div>
+        <div class="sidebar-brand text-center py-3 mb-2">
+            <img th:src="@{/images/logo blanco.png}" alt="Logo Dotaciones Toronto" 
+                style="width: 140px; height: auto; object-fit: contain; display: block; margin: 0 auto 10px;">
+            <div class="text-uppercase tracking-wider fw-bold text-success" style="font-size: 0.75rem; letter-spacing: 1.5px;">BODEGUERO</div>
+            <div class="fw-bold" style="color: #f5c451; font-size: 0.95rem;">Dotaciones Toronto</div>
         </div>
 
-        <a href="/bodeguero/panel"><i class="bi bi-house"></i> Inicio</a>
-        <a href="/bodeguero/perfil"><i class="bi bi-person"></i> Perfil</a>
-        <a href="/bodeguero/inventario" class="active"><i class="bi bi-archive"></i> Inventario</a>
-        
-        <form th:action="@{/logout}" method="post" style="padding: 10px 20px; margin-top: 10px">
-            <button
-              type="submit"
-              style="
-                background: none;
-                border: none;
-                color: #f87171;
-                cursor: pointer;
-                font-size: 0.9rem;
-                padding: 0;
-              "
-            >
-              <i class="bi bi-box-arrow-right"></i> Cerrar sesión
-            </button>
+        <div class="nav flex-column flex-grow-1">
+            <a href="/bodeguero/panel"><i class="bi bi-house me-2"></i> Inicio</a>
+            <a href="/bodeguero/perfil"><i class="bi bi-person me-2"></i> Perfil</a>
+            <a href="/bodeguero/inventario"><i class="bi bi-archive me-2"></i> Inventario</a>
+        </div>
+
+        <form th:action="@{/logout}" method="post" class="logout-form">
+        <button
+          type="submit"
+          style="
+            background: none;
+            border: none;
+            color: #f87171;
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0;
+          "
+        >
+          <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+        </button>
         </form>
     </div>
 
@@ -83,13 +87,12 @@
                     </div>
 
                     <select id="filtroCategoria" class="form-select" style="max-width: 180px;" onchange="filtrarInventario()">
-                        <option value="todas">Categoría: Todas</option>
-                        <th:block th:each="prod : ${productos}">
-                            <option th:if="${prod.categoria != null}" 
-                                    th:value="${prod.categoria}" 
-                                    th:text="${prod.categoria}">
-                            </option>
-                        </th:block>
+    <option value="todas">Categoría: Todas</option>
+    <option value="Calzado">Calzado</option>
+    <option value="Pantalones">Pantalones</option>
+    <option value="Chaquetas">Chaquetas</option>
+    <option value="Protección Personal">Protección Personal</option>
+    <option value="Camisas/Polos">Camisas/Polos</option>
                     </select>
 
                     <select id="filtroStock" class="form-select" style="max-width: 180px;" onchange="filtrarInventario()">

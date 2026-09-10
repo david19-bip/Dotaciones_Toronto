@@ -38,6 +38,7 @@ import com.dotacionestoronto.dotacionestoronto.entity.DetallePedido;
 import com.dotacionestoronto.dotacionestoronto.entity.DetalleVenta;
 import com.dotacionestoronto.dotacionestoronto.entity.Devolucion;
 import com.dotacionestoronto.dotacionestoronto.entity.Inventario;
+import com.dotacionestoronto.dotacionestoronto.entity.MovimientoInventario;
 import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
 import com.dotacionestoronto.dotacionestoronto.entity.Producto;
 import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
@@ -46,6 +47,7 @@ import com.dotacionestoronto.dotacionestoronto.repository.DetallePedidoRepositor
 import com.dotacionestoronto.dotacionestoronto.repository.DetalleVentaRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.DevolucionRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.InventarioRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.MovimientoInventarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
@@ -88,6 +90,9 @@ public class AdminController {
 
     @Autowired
     private ReporteUsuariosService reporteUsuariosService;
+
+    @Autowired
+    private MovimientoInventarioRepository movimientoInventarioRepository;
 
     @Autowired
     private ReporteUsuariosExcelService reporteUsuariosExcelService;
@@ -353,11 +358,12 @@ public class AdminController {
         return ResponseEntity.ok().headers(headers).body(excel);
     }
 
-    // ===== INVENTARIO =====
+    // ===== INVENTARIO ADMIN =====
     @GetMapping("/inventario")
     public String inventario(Model model) {
         model.addAttribute("inventarios", inventarioRepository.findAll());
         model.addAttribute("productos", productoRepository.findAll());
+        model.addAttribute("movimientos", movimientoInventarioRepository.findTop50ByOrderByIdDesc());
         model.addAttribute("nombre", getUsuarioActual().getNombre());
         return "admin/inventario_admin";
     }
@@ -375,17 +381,69 @@ public class AdminController {
         inventario.setInhabilitado(false);
         inventarioRepository.save(inventario);
 
+        String nombreProd = "#" + idProducto;
+        var prodOpt = productoRepository.findById(idProducto);
+        if (prodOpt.isPresent()) {
+            var p = prodOpt.get();
+            nombreProd = p.getNombre() + " - " + p.getTalla() + " - " + p.getColor();
+        }
+
+        MovimientoInventario mov = new MovimientoInventario();
+        mov.setIdInventario(inventario.getId());
+        mov.setNombreProducto(nombreProd);
+        mov.setTipoMovimiento("ENTRADA");
+        mov.setCantidad(cantidadActual);
+        mov.setMotivo("Registro inicial de inventario (Admin)");
+        mov.setUsuarioResponsable(getUsuarioActual().getNombre());
+        movimientoInventarioRepository.save(mov);
+
         return "redirect:/admin/inventario";
     }
 
-    @PostMapping("/inventario/actualizar")
-    public String actualizarInventario(
+    @PostMapping("/inventario/editar")
+    public String editarInventario(
             @RequestParam Long idInventario,
-            @RequestParam Integer cantidadActual) {
+            @RequestParam Integer cantidadActual,
+            @RequestParam Integer stockMinimo,
+            @RequestParam(required = false, defaultValue = "Ajuste manual de inventario") String motivo) {
 
         Inventario inventario = inventarioRepository.findById(idInventario).orElse(null);
         if (inventario != null) {
+            int diferencia = cantidadActual - (inventario.getCantidadActual() != null ? inventario.getCantidadActual() : 0);
+
+            String tipo = "AJUSTE";
+            if (diferencia > 0) tipo = "ENTRADA";
+            else if (diferencia < 0) tipo = "SALIDA";
+
             inventario.setCantidadActual(cantidadActual);
+            inventario.setStockMinimo(stockMinimo);
+            inventarioRepository.save(inventario);
+
+            String nombreProd = "#" + inventario.getIdProducto();
+            var prodOpt = productoRepository.findById(inventario.getIdProducto());
+            if (prodOpt.isPresent()) {
+                var p = prodOpt.get();
+                nombreProd = p.getNombre() + " - " + p.getTalla() + " - " + p.getColor();
+            }
+
+            MovimientoInventario mov = new MovimientoInventario();
+            mov.setIdInventario(idInventario);
+            mov.setNombreProducto(nombreProd);
+            mov.setTipoMovimiento(tipo);
+            mov.setCantidad(Math.abs(diferencia));
+            mov.setMotivo(motivo);
+            mov.setUsuarioResponsable(getUsuarioActual().getNombre());
+            movimientoInventarioRepository.save(mov);
+        }
+        return "redirect:/admin/inventario";
+    }
+
+    @PostMapping("/inventario/cambiar-estado")
+    public String cambiarEstadoInventario(@RequestParam Long idInventario) {
+        Inventario inventario = inventarioRepository.findById(idInventario).orElse(null);
+        if (inventario != null) {
+            boolean nuevoEstado = inventario.getInhabilitado() == null || !inventario.getInhabilitado();
+            inventario.setInhabilitado(nuevoEstado);
             inventarioRepository.save(inventario);
         }
         return "redirect:/admin/inventario";
