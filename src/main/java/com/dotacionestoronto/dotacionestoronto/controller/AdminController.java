@@ -54,6 +54,7 @@ import com.dotacionestoronto.dotacionestoronto.service.ReporteProductosExcelServ
 import com.dotacionestoronto.dotacionestoronto.service.ReporteProductosService;
 import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosExcelService;
 import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosService;
+import com.dotacionestoronto.dotacionestoronto.service.ReporteVentasExcelService;
 
 @Controller
 @RequestMapping("/admin")
@@ -97,6 +98,9 @@ public class AdminController {
 
     @Autowired
     private ReporteProductosExcelService reporteProductosExcelService;
+
+    @Autowired
+    private ReporteVentasExcelService reporteVentasExcelService;
 
     private Usuario getUsuarioActual() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -548,6 +552,18 @@ public class AdminController {
         model.addAttribute("ventas", vista);
         model.addAttribute("nombre", getUsuarioActual().getNombre());
         return "admin/ventas_admin";
+    }
+
+    @GetMapping("/ventas/reporte/excel")
+    public ResponseEntity<byte[]> reporteVentasExcel() {
+        byte[] excel = reporteVentasExcelService.generarReporte(ventaRepository.findAllByOrderByFechaVentaDesc());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename("reporte_ventas.xlsx")
+                .build());
+        return ResponseEntity.ok().headers(headers).body(excel);
     }
 
     @GetMapping("/ventas/grafico")

@@ -30,24 +30,33 @@
     </div>
 
     <!-- Contenido principal -->
-    <div class="main-content">
+    <div class="main-content ventas-content">
+<div class="d-flex justify-content-between align-items-center mb-4 ventas-header">
+    <div>
         <h4 class="fw-bold text-dark mb-1">Historial de Ventas</h4>
-        <p class="text-muted mb-4">Bienvenido, <span th:text="${nombre}"></span></p>
-
+        <p class="text-muted mb-0">Bienvenido, <span th:text="${nombre}"></span></p>
+    </div>
+    <button class="btn btn-reporte shadow-sm" onclick="generarPDF()">
+        <i class="bi bi-file-earmark-pdf-fill me-1"></i> Reporte PDF
+    </button>
+    <a class="btn btn-reporte-excel shadow-sm ms-2" th:href="@{/vendedor/ventas/reporte/excel}">
+        <i class="bi bi-file-earmark-excel-fill me-1"></i> Reporte Excel
+    </a>
+</div>
         <!-- Gráfica de ventas -->
         <div class="card border-0 shadow-sm rounded-3 p-4 mb-4">
             <h6 class="fw-bold text-muted mb-3"><i class="bi bi-bar-chart-line me-2"></i>Ventas por fecha</h6>
             <div th:if="${#lists.isEmpty(ventas)}" class="text-center text-muted py-4">
                 Aún no hay datos suficientes para graficar
             </div>
-            <div th:unless="${#lists.isEmpty(ventas)}" style="max-height: 320px;">
+            <div th:unless="${#lists.isEmpty(ventas)}" class="grafica-contenedor">
                 <canvas id="graficaVentas"></canvas>
             </div>
         </div>
 
         <!-- Tabla de ventas -->
         <div class="card border-0 shadow-sm rounded-3">
-            <div class="card-body p-0">
+            <div class="card-body p-0 tabla-ventas-contenedor">
                 <table class="table table-hover mb-0">
                     <thead style="background-color:#1E293B; color:#F8FAFC;">
                         <tr>
@@ -175,6 +184,7 @@
             </div>
         </div>
     </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/chart.umd.js}"></script>
@@ -242,5 +252,102 @@
         }
         /*]]>*/
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+async function generarPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageW = doc.internal.pageSize.getWidth();
+
+    // ===== ENCABEZADO =====
+    doc.setFillColor(30, 41, 59);
+    doc.rect(0, 0, pageW, 35, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DOTACIONES TORONTO', pageW / 2, 15, { align: 'center' });
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Reporte de Ventas', pageW / 2, 23, { align: 'center' });
+
+    const fecha = new Date().toLocaleDateString('es-CO', {
+        day: '2-digit', month: 'long', year: 'numeric'
+    });
+    doc.setFontSize(9);
+    doc.text('Generado el: ' + fecha, pageW / 2, 30, { align: 'center' });
+
+    let y = 45;
+
+    // ===== GRÁFICA =====
+    const canvas = document.getElementById('graficaVentas');
+    if (canvas) {
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Gráfica de Ventas por Fecha', 14, y);
+        y += 6;
+
+        const imgData = canvas.toDataURL('image/png');
+        const imgW = pageW - 28;
+        const imgH = (canvas.height * imgW) / canvas.width;
+        doc.addImage(imgData, 'PNG', 14, y, imgW, imgH);
+        y += imgH + 10;
+    }
+
+    // ===== TABLA DE VENTAS =====
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Detalle de Ventas', 14, y);
+    y += 8;
+
+    // Encabezado tabla
+    doc.setFillColor(30, 41, 59);
+    doc.rect(14, y, pageW - 28, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('#', 16, y + 5.5);
+    doc.text('# Pedido', 26, y + 5.5);
+    doc.text('Cliente', 56, y + 5.5);
+    doc.text('Fecha', 110, y + 5.5);
+    doc.text('Total', 165, y + 5.5);
+    y += 8;
+
+    // Filas
+    const filas = document.querySelectorAll('table tbody tr');
+    let count = 0;
+    filas.forEach(function(fila) {
+        const celdas = fila.querySelectorAll('td');
+        if (celdas.length >= 5) {
+            if (y > 270) {
+                doc.addPage();
+                y = 20;
+            }
+            const bg = count % 2 === 0 ? [248, 250, 252] : [255, 255, 255];
+            doc.setFillColor(...bg);
+            doc.rect(14, y, pageW - 28, 7, 'F');
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.text(celdas[0].innerText.trim(), 16, y + 5);
+            doc.text(celdas[1].innerText.trim(), 26, y + 5);
+            doc.text(celdas[2].innerText.trim().substring(0, 25), 56, y + 5);
+            doc.text(celdas[3].innerText.trim(), 110, y + 5);
+            doc.text(celdas[4].innerText.trim(), 165, y + 5);
+            y += 7;
+            count++;
+        }
+    });
+
+    // ===== FOOTER =====
+    doc.setTextColor(150, 150, 150);
+    doc.setFontSize(8);
+    doc.text('© Dotaciones Toronto 2026', pageW / 2, 290, { align: 'center' });
+
+    doc.save('reporte_ventas.pdf');
+}
+</script>
 </body>
 </html>

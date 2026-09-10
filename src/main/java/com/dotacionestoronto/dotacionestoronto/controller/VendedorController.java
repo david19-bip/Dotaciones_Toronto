@@ -6,6 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,6 +35,7 @@ import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.VentaRepository;
+import com.dotacionestoronto.dotacionestoronto.service.ReporteVentasExcelService;
 
 @Controller
 @RequestMapping("/vendedor")
@@ -56,6 +61,9 @@ public class VendedorController {
 
     @Autowired
     private DetallePedidoRepository detallePedidoRepository;
+
+    @Autowired
+    private ReporteVentasExcelService reporteVentasExcelService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -286,6 +294,18 @@ public class VendedorController {
         model.addAttribute("nombre", getUsuarioActual().getNombre());
 
         return "vendedor/ventas_vendedor";
+    }
+
+    @GetMapping("/ventas/reporte/excel")
+    public ResponseEntity<byte[]> reporteVentasExcel() {
+        byte[] excel = reporteVentasExcelService.generarReporte(ventaRepository.findAllByOrderByFechaVentaDesc());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename("reporte_ventas.xlsx")
+                .build());
+        return ResponseEntity.ok().headers(headers).body(excel);
     }
 
     public static class VentaVista {

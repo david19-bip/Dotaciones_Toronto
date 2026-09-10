@@ -8,6 +8,34 @@ body {
     color: #0f172a;
 }
 
+.btn-reporte {
+    background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+    color: #e2b96f;
+    border: 1px solid rgba(226, 185, 111, 0.5);
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-reporte:hover {
+    color: #1a1a2e;
+    background: #e2b96f;
+    border-color: #e2b96f;
+}
+
+.btn-reporte-excel {
+    background: linear-gradient(135deg, #1a1a2e 0%, #1d6f42 100%);
+    color: #ffffff;
+    border: 1px solid rgba(29, 111, 66, 0.5);
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-reporte-excel:hover {
+    color: #1a1a2e;
+    background: #34c37a;
+    border-color: #34c37a;
+}
+
 /* --- BARRA LATERAL (SIDEBAR COMERCIAL) --- */
 .sidebar {
     min-height: 100vh;
@@ -84,6 +112,41 @@ body {
 .main-content {
     margin-left: 220px;
     padding: 40px;
+}
+
+/* Dimensiones estables para el historial de ventas. */
+.ventas-content {
+    min-width: 760px;
+}
+
+.ventas-header {
+    min-height: 58px;
+}
+
+.grafica-contenedor {
+    height: 320px;
+    min-height: 320px;
+    position: relative;
+}
+
+.grafica-contenedor canvas {
+    display: block;
+    height: 320px !important;
+    width: 100% !important;
+}
+
+.tabla-ventas-contenedor {
+    overflow-x: auto;
+}
+
+.tabla-ventas-contenedor table {
+    min-width: 880px;
+    table-layout: fixed;
+}
+
+.tabla-ventas-contenedor th,
+.tabla-ventas-contenedor td {
+    white-space: nowrap;
 }
 
 /* --- BANNER DE BIENVENIDA --- */
