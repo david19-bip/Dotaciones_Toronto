@@ -30,6 +30,14 @@ import com.lowagie.text.pdf.PdfWriter;
 @Service
 public class ReporteUsuariosService {
 
+    // ==========================================
+    // Datos de contacto de la empresa
+    // ==========================================
+    private static final String EMPRESA_NOMBRE    = "DOTACIONES TORONTO";
+    private static final String EMPRESA_CORREO    = "dotaciones.elobrero@gmail.com";
+    private static final String EMPRESA_TELEFONO  = "+57 321 209 9989";
+    private static final String EMPRESA_DIRECCION = "Carrera 63 Sur #21-12, Bogotá D.C., Colombia";
+
     // Paleta ejecutiva del panel admin: navy profundo + dorado
     private static final Color NAVY_OSCURO   = new Color(0x1A, 0x1A, 0x2E);
     private static final Color NAVY_MEDIO    = new Color(0x16, 0x21, 0x3E);
@@ -60,6 +68,7 @@ public class ReporteUsuariosService {
     private final Font fSerifTituloGrande = new Font(Font.HELVETICA, 22, Font.BOLD, DORADO);
     private final Font fSubtitulo = new Font(Font.HELVETICA, 10, Font.NORMAL, new Color(0xCB, 0xD5, 0xE0));
     private final Font fEtiquetaBlanca = new Font(Font.HELVETICA, 8, Font.NORMAL, new Color(0xB8, 0xC2, 0xD6));
+    private final Font fContactoBlanco = new Font(Font.HELVETICA, 8, Font.NORMAL, new Color(0xCB, 0xD5, 0xE0));
     private final Font fStatNumero = new Font(Font.HELVETICA, 20, Font.BOLD, NAVY_PROFUNDO);
     private final Font fStatLabel = new Font(Font.HELVETICA, 8, Font.BOLD, GRIS_TEXTO);
     private final Font fTablaHeader = new Font(Font.HELVETICA, 9, Font.BOLD, DORADO);
@@ -120,17 +129,26 @@ public class ReporteUsuariosService {
         celdaTitulo.setPadding(18);
         celdaTitulo.setVerticalAlignment(Element.ALIGN_MIDDLE);
 
-        Paragraph marca = new Paragraph("DOTACIONES TORONTO", fEtiquetaBlanca);
+        Paragraph marca = new Paragraph(EMPRESA_NOMBRE, fEtiquetaBlanca);
         marca.setSpacingAfter(4);
         Paragraph titulo = new Paragraph("Reporte de usuarios del sistema", fSerifTituloGrande);
         titulo.setSpacingAfter(4);
         Paragraph fecha = new Paragraph(
                 "Generado el " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy 'a las' HH:mm")),
                 fSubtitulo);
+        fecha.setSpacingAfter(6);
+
+        // Datos de contacto de la empresa
+        Paragraph direccion = new Paragraph(EMPRESA_DIRECCION, fContactoBlanco);
+        Paragraph telefono = new Paragraph("Tel: " + EMPRESA_TELEFONO, fContactoBlanco);
+        Paragraph correo = new Paragraph("Correo: " + EMPRESA_CORREO, fContactoBlanco);
 
         celdaTitulo.addElement(marca);
         celdaTitulo.addElement(titulo);
         celdaTitulo.addElement(fecha);
+        celdaTitulo.addElement(direccion);
+        celdaTitulo.addElement(telefono);
+        celdaTitulo.addElement(correo);
 
         PdfPCell celdaContador = new PdfPCell();
         celdaContador.setBorder(Rectangle.NO_BORDER);
@@ -341,9 +359,9 @@ public class ReporteUsuariosService {
     }
 
     // ==========================================
-    // Pie de página con numeración y franja dorada
+    // Pie de página con numeración, datos de contacto y franja dorada
     // ==========================================
-    private static class PiePagina extends PdfPageEventHelper {
+    private class PiePagina extends PdfPageEventHelper {
         @Override
         public void onEndPage(PdfWriter writer, Document documento) {
             PdfContentByte cb = writer.getDirectContent();
@@ -352,11 +370,17 @@ public class ReporteUsuariosService {
             cb.rectangle(0, 30, documento.getPageSize().getWidth(), 2);
             cb.fill();
 
+            Phrase contacto = new Phrase(
+                    EMPRESA_DIRECCION + "  |  " + EMPRESA_TELEFONO + "  |  " + EMPRESA_CORREO,
+                    fFooter);
+            ColumnText.showTextAligned(cb, Element.ALIGN_CENTER, contacto,
+                    documento.getPageSize().getWidth() / 2, 22, 0);
+
             Phrase pie = new Phrase(
-                    "Dotaciones Toronto · Documento generado automáticamente · Página " + writer.getPageNumber(),
-                    new Font(Font.HELVETICA, 7, Font.NORMAL, GRIS_TEXTO));
+                    EMPRESA_NOMBRE + " · Documento generado automáticamente · Página " + writer.getPageNumber(),
+                    fFooter);
             ColumnText.showTextAligned(cb, Element.ALIGN_CENTER, pie,
-                    documento.getPageSize().getWidth() / 2, 16, 0);
+                    documento.getPageSize().getWidth() / 2, 14, 0);
         }
     }
 }
