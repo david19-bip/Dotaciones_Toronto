@@ -7,196 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link th:href="@{/css/admin.css}" rel="stylesheet">
-    <style>
-        .btn-reporte {
-            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
-            color: #e2b96f;
-            border: 1px solid rgba(226, 185, 111, 0.5);
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        .btn-reporte:hover {
-            color: #1a1a2e;
-            background: #e2b96f;
-            border-color: #e2b96f;
-        }
-
-        .btn-reporte-excel {
-            background: linear-gradient(135deg, #1a1a2e 0%, #1d6f42 100%);
-            color: #ffffff;
-            border: 1px solid rgba(29, 111, 66, 0.5);
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        .btn-reporte-excel:hover {
-            color: #1a1a2e;
-            background: #34c37a;
-            border-color: #34c37a;
-        }
-
-        #tablaVentas tbody tr {
-            transition: background 0.15s ease;
-        }
-        #tablaVentas tbody tr:hover {
-            background: #f8fafc;
-        }
-
-        .badge-solo-lectura {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: #f1f5f9;
-            color: #64748b;
-            font-size: 0.78rem;
-            font-weight: 600;
-            padding: 6px 12px;
-            border-radius: 999px;
-        }
-
-        .grafico-card {
-            background: #fff;
-            border: none;
-            border-radius: 16px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.06);
-            padding: 20px 22px 8px;
-        }
-
-        .grafico-card h6 {
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 14px;
-        }
-
-        .grafico-vacio {
-            text-align: center;
-            color: #94a3b8;
-            padding: 40px 0;
-            font-size: 0.9rem;
-        }
-
-        /* ===== Modal de detalle ===== */
-        #modalDetalleVenta .modal-content {
-            border: none;
-            border-radius: 18px;
-            overflow: hidden;
-        }
-
-        #modalDetalleVenta .modal-header {
-            background: #0f172a;
-            border: none;
-            padding: 20px 24px;
-        }
-
-        #modalDetalleVenta .modal-title {
-            color: #fff;
-        }
-
-        #modalDetalleVenta .modal-header .btn-close {
-            filter: invert(1) grayscale(100%) brightness(200%);
-        }
-
-        #modalDetalleVenta .cliente-info {
-            background: #f8fafc;
-            border-radius: 12px;
-            padding: 14px 16px;
-            margin-bottom: 16px;
-            font-size: 0.85rem;
-        }
-
-        #modalDetalleVenta .cliente-info div {
-            margin-bottom: 3px;
-        }
-
-        #modalDetalleVenta .cliente-info strong {
-            color: #1e293b;
-        }
-
-        .detalle-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 12px 0;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .detalle-item:last-child {
-            border-bottom: none;
-        }
-
-        .detalle-item-img {
-            width: 52px;
-            height: 52px;
-            border-radius: 10px;
-            background: #f8fafc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            flex-shrink: 0;
-            border: 1px solid #f1f5f9;
-        }
-
-        .detalle-item-img img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .detalle-item-img i {
-            font-size: 1.3rem;
-            color: #cbd5e1;
-        }
-
-        .detalle-item-info {
-            flex-grow: 1;
-            min-width: 0;
-        }
-
-        .detalle-item-info h6 {
-            font-weight: 700;
-            font-size: 0.9rem;
-            margin-bottom: 2px;
-            color: #1e293b;
-        }
-
-        .detalle-item-info .badge-mini {
-            font-size: 0.7rem;
-            font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 999px;
-            background: #f1f5f9;
-            color: #64748b;
-            margin-right: 4px;
-        }
-
-        .detalle-item-info .precio-cant {
-            font-size: 0.78rem;
-            color: #94a3b8;
-        }
-
-        .detalle-item-subtotal {
-            font-weight: 800;
-            font-size: 0.92rem;
-            color: #16a34a;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        #modalDetalleVenta .modal-footer {
-            border: none;
-            background: #f8fafc;
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #modalDetalleVenta .modal-footer .total-valor {
-            font-size: 1.15rem;
-            font-weight: 800;
-            color: #1e293b;
-        }
-    </style>
+    
 </head>
 <body>
 
@@ -214,13 +25,13 @@
             </span>
         </div>
 
-        <a href="/admin/panel"><i class="bi bi-speedometer2"></i> Inicio</a>
+        <a href="/admin/panel" ><i class="bi bi-speedometer2"></i> Inicio</a>
         <a href="/admin/perfil"><i class="bi bi-person-circle"></i> Perfil</a>
         <a href="/admin/usuarios"><i class="bi bi-people"></i> Usuarios</a>
         <a href="/admin/productos"><i class="bi bi-box-seam"></i> Productos</a>
         <a href="/admin/inventario"><i class="bi bi-archive"></i> Inventario</a>
         <a href="/admin/pedidos"><i class="bi bi-bag-check"></i> Pedidos</a>
-        <a href="/admin/ventas" class="active"><i class="bi bi-graph-up"></i> Ventas</a>
+        <a href="/admin/ventas"class="active"><i class="bi bi-bag-check"></i> ventas</a>
         <a href="/admin/devoluciones"><i class="bi bi-arrow-return-left"></i> Devoluciones</a>
 
         <div style="padding: 15px 24px; margin-top: auto;">
