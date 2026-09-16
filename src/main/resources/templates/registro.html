@@ -104,17 +104,6 @@
                         </div>
                         <div class="invalid-feedback">Mínimo 6 caracteres.</div>
                     </div>
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">Rol</label>
-                        <select name="rol" id="rol" class="form-control form-select" required>
-                            <option value="">Seleccione rol</option>
-                            <option value="2">Cliente</option>
-                            <option value="3">Vendedor</option>
-                            <option value="4">Bodeguero</option>
-                            <option value="1">Admin</option>
-                        </select>
-                        <div class="invalid-feedback">Seleccione un rol.</div>
-                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-login w-100">
@@ -148,7 +137,6 @@
         document.getElementById('correo').addEventListener('input', function() { validarCampo(this); });
         document.getElementById('direccion').addEventListener('input', function() { validarCampo(this); });
         document.getElementById('password').addEventListener('input', function() { validarCampo(this); });
-        document.getElementById('rol').addEventListener('change', function() { validarCampo(this); });
 
         function validarCampo(campo) {
             if (campo.checkValidity()) {
