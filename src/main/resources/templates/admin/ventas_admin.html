@@ -273,24 +273,98 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
-        function generarPDFVentas() {
+        // ===== Datos de la empresa =====
+        const EMPRESA = {
+            nombre:    'DOTACIONES TORONTO',
+            correo:    'dotaciones.elobrero@gmail.com',
+            telefono:  '+57 321 209 9989',
+            direccion: 'Carrera 63 Sur #21-12, Bogotá D.C., Colombia'
+        };
+
+        /**
+         * Convierte el logo del sidebar a base64 para poder insertarlo en el PDF.
+         * Devuelve null si la imagen no carga, para que el reporte se genere igual.
+         */
+        function obtenerLogoBase64() {
+            return new Promise((resolve) => {
+                const imagenSidebar = document.querySelector('.sidebar-brand img');
+                const ruta = imagenSidebar
+                    ? imagenSidebar.getAttribute('src')
+                    : '/images/logo%20blanco.png';
+
+                const imagen = new Image();
+                imagen.crossOrigin = 'anonymous';
+
+                imagen.onload = () => {
+                    try {
+                        const lienzo = document.createElement('canvas');
+                        lienzo.width  = imagen.naturalWidth;
+                        lienzo.height = imagen.naturalHeight;
+                        lienzo.getContext('2d').drawImage(imagen, 0, 0);
+                        resolve({
+                            dataUrl: lienzo.toDataURL('image/png'),
+                            ancho:   imagen.naturalWidth,
+                            alto:    imagen.naturalHeight
+                        });
+                    } catch (e) {
+                        resolve(null);
+                    }
+                };
+
+                imagen.onerror = () => resolve(null);
+                imagen.src = ruta;
+            });
+        }
+
+        async function generarPDFVentas() {
             const { jsPDF } = window.jspdf;
             const documento = new jsPDF('p', 'mm', 'a4');
             const anchoPagina = documento.internal.pageSize.getWidth();
 
+            const logo = await obtenerLogoBase64();
+
+            // ===== ENCABEZADO =====
+            const altoEncabezado = 44;
             documento.setFillColor(26, 26, 46);
-            documento.rect(0, 0, anchoPagina, 35, 'F');
+            documento.rect(0, 0, anchoPagina, altoEncabezado, 'F');
+
+            // Logo a la izquierda (se adapta a la proporción real de la imagen)
+            let xTexto = 14;
+            if (logo) {
+                const altoLogo  = 24;
+                const anchoLogo = (logo.ancho * altoLogo) / logo.alto;
+                documento.addImage(logo.dataUrl, 'PNG', 14, 7, anchoLogo, altoLogo);
+                xTexto = 14 + anchoLogo + 8;
+            }
+
+            // Nombre y datos de contacto, alineados junto al logo
             documento.setTextColor(255, 255, 255);
             documento.setFont('helvetica', 'bold');
-            documento.setFontSize(18);
-            documento.text('DOTACIONES TORONTO', anchoPagina / 2, 15, { align: 'center' });
-            documento.setFont('helvetica', 'normal');
-            documento.setFontSize(11);
-            documento.text('Reporte de Ventas', anchoPagina / 2, 23, { align: 'center' });
-            documento.setFontSize(9);
-            documento.text('Generado el: ' + new Date().toLocaleDateString('es-CO'), anchoPagina / 2, 30, { align: 'center' });
+            documento.setFontSize(16);
+            documento.text(EMPRESA.nombre, xTexto, 17);
 
-            let y = 45;
+            documento.setFont('helvetica', 'normal');
+            documento.setFontSize(8);
+            documento.setTextColor(203, 213, 225);
+            documento.text(EMPRESA.direccion, xTexto, 24);
+            documento.text('Tel: ' + EMPRESA.telefono, xTexto, 29);
+            documento.text('Correo: ' + EMPRESA.correo, xTexto, 34);
+
+            // Título y fecha, alineados a la derecha
+            documento.setFont('helvetica', 'bold');
+            documento.setFontSize(11);
+            documento.setTextColor(255, 255, 255);
+            documento.text('REPORTE DE VENTAS', anchoPagina - 14, 17, { align: 'right' });
+
+            documento.setFont('helvetica', 'normal');
+            documento.setFontSize(8);
+            documento.setTextColor(148, 163, 184);
+            documento.text('Generado el: ' + new Date().toLocaleDateString('es-CO'),
+                           anchoPagina - 14, 24, { align: 'right' });
+
+            let y = altoEncabezado + 12;
+
+            // ===== GRÁFICA =====
             const canvas = document.getElementById('graficoVentas');
             if (canvas && canvas.style.display !== 'none') {
                 documento.setTextColor(30, 41, 59);
@@ -298,47 +372,89 @@
                 documento.setFontSize(12);
                 documento.text('Gráfica de Ventas por Fecha', 14, y);
                 y += 6;
-                const imagen = canvas.toDataURL('image/png');
+
+                const imagenGrafico = canvas.toDataURL('image/png');
                 const anchoImagen = anchoPagina - 28;
-                const altoImagen = (canvas.height * anchoImagen) / canvas.width;
-                documento.addImage(imagen, 'PNG', 14, y, anchoImagen, altoImagen);
+                const altoImagen  = (canvas.height * anchoImagen) / canvas.width;
+                documento.addImage(imagenGrafico, 'PNG', 14, y, anchoImagen, altoImagen);
                 y += altoImagen + 10;
             }
 
+            // ===== TABLA =====
+            const columnasX = [16, 31, 51, 94, 132, 162];
+            const encabezados = ['# Venta', '# Pedido', 'Cliente', 'Fecha', 'Productos', 'Total'];
+
             documento.setTextColor(30, 41, 59);
+            documento.setFont('helvetica', 'bold');
             documento.setFontSize(12);
             documento.text('Detalle de Ventas', 14, y);
             y += 8;
+
             documento.setFillColor(22, 33, 62);
             documento.rect(14, y, anchoPagina - 28, 8, 'F');
             documento.setTextColor(255, 255, 255);
             documento.setFontSize(8);
-            ['# Venta', '# Pedido', 'Cliente', 'Fecha', 'Productos', 'Total'].forEach((texto, indice) => {
-                documento.text(texto, [16, 31, 51, 94, 132, 162][indice], y + 5.5);
+            encabezados.forEach((texto, indice) => {
+                documento.text(texto, columnasX[indice], y + 5.5);
             });
             y += 8;
 
             document.querySelectorAll('#tablaVentas tbody tr').forEach((fila, indice) => {
                 const celdas = fila.querySelectorAll('td');
                 if (celdas.length < 6) return;
-                if (y > 270) {
+
+                if (y > 265) {
                     documento.addPage();
                     y = 20;
+
+                    // Repetir cabecera de la tabla en la página nueva
+                    documento.setFillColor(22, 33, 62);
+                    documento.rect(14, y, anchoPagina - 28, 8, 'F');
+                    documento.setTextColor(255, 255, 255);
+                    documento.setFont('helvetica', 'bold');
+                    documento.setFontSize(8);
+                    encabezados.forEach((texto, i) => {
+                        documento.text(texto, columnasX[i], y + 5.5);
+                    });
+                    y += 8;
                 }
+
                 documento.setFillColor(...(indice % 2 === 0 ? [248, 250, 252] : [255, 255, 255]));
                 documento.rect(14, y, anchoPagina - 28, 7, 'F');
                 documento.setTextColor(30, 41, 59);
                 documento.setFont('helvetica', 'normal');
                 documento.setFontSize(7);
-                [16, 31, 51, 94, 132, 162].forEach((x, columna) => {
+                columnasX.forEach((x, columna) => {
                     documento.text(celdas[columna].innerText.trim().substring(0, 22), x, y + 5);
                 });
                 y += 7;
             });
 
-            documento.setTextColor(150, 150, 150);
-            documento.setFontSize(8);
-            documento.text('© Dotaciones Toronto 2026', anchoPagina / 2, 290, { align: 'center' });
+            // ===== PIE DE PÁGINA (en todas las páginas) =====
+            const totalPaginas = documento.internal.getNumberOfPages();
+            for (let p = 1; p <= totalPaginas; p++) {
+                documento.setPage(p);
+
+                documento.setDrawColor(226, 232, 240);
+                documento.setLineWidth(0.3);
+                documento.line(14, 282, anchoPagina - 14, 282);
+
+                documento.setFont('helvetica', 'normal');
+                documento.setTextColor(120, 120, 120);
+                documento.setFontSize(7);
+                documento.text(
+                    EMPRESA.direccion + '  |  ' + EMPRESA.telefono + '  |  ' + EMPRESA.correo,
+                    anchoPagina / 2, 287, { align: 'center' }
+                );
+
+                documento.setTextColor(150, 150, 150);
+                documento.text(
+                    '© ' + EMPRESA.nombre + ' ' + new Date().getFullYear()
+                    + '   —   Página ' + p + ' de ' + totalPaginas,
+                    anchoPagina / 2, 292, { align: 'center' }
+                );
+            }
+
             documento.save('reporte_ventas.pdf');
         }
     </script>
