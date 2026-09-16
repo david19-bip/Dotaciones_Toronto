@@ -127,7 +127,24 @@ public class ClienteController {
                     .map(d -> d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad())))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            resumenes.add(new PedidoResumen(p.getId(), p.getFechaPedido(), p.getEstado(), cantidadTotal, total));
+            // Solo tiene sentido revisar devoluciones sobre pedidos ya entregados
+            // (son los únicos que generan una Venta / DetalleVenta).
+            boolean tieneDevolucion = false;
+            if ("Entregado".equals(p.getEstado())) {
+                Venta venta = ventaRepository.findByIdPedido(p.getId());
+                if (venta != null) {
+                    List<DetalleVenta> detallesVenta = detalleVentaRepository.findByIdVenta(venta.getId());
+                    for (DetalleVenta dv : detallesVenta) {
+                        if (!devolucionRepository.findByIdDetalleVenta(dv.getId()).isEmpty()) {
+                            tieneDevolucion = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            resumenes.add(new PedidoResumen(
+                    p.getId(), p.getFechaPedido(), p.getEstado(), cantidadTotal, total, tieneDevolucion));
         }
 
         model.addAttribute("pedidos", resumenes);
@@ -166,6 +183,39 @@ public class ClienteController {
         }
 
         return resultado;
+    }
+
+    // Cancela un pedido del cliente. Solo se permite mientras el pedido
+    // siga en estado "Pendiente" (si el vendedor ya lo marcó como
+    // "Enviado" o "Entregado", el cliente ya no puede cancelarlo).
+    // El pedido no se oculta: sigue apareciendo tanto en el historial
+    // del cliente como en la lista de pedidos del vendedor, ahora con
+    // estado "Cancelado".
+    @PostMapping("/pedidos/{id}/cancelar")
+    public String cancelarPedido(
+            @PathVariable Long id,
+            RedirectAttributes redirectAttributes) {
+
+        Usuario usuario = getUsuarioActual();
+
+        Pedido pedido = pedidoRepository.findById(id).orElse(null);
+
+        if (pedido == null || !pedido.getIdUsuario().equals(usuario.getId())) {
+            redirectAttributes.addFlashAttribute("error", "Pedido no válido.");
+            return "redirect:/cliente/pedidos";
+        }
+
+        if (!"Pendiente".equals(pedido.getEstado())) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Solo puedes cancelar pedidos que estén en estado Pendiente.");
+            return "redirect:/cliente/pedidos";
+        }
+
+        pedido.setEstado("Cancelado");
+        pedidoRepository.save(pedido);
+
+        redirectAttributes.addFlashAttribute("exito", "Tu pedido fue cancelado correctamente.");
+        return "redirect:/cliente/pedidos";
     }
 
     // ==========================================
@@ -442,13 +492,16 @@ public class ClienteController {
         private String estado;
         private Integer cantidadProductos;
         private BigDecimal total;
+        private boolean tieneDevolucion;
 
-        public PedidoResumen(Long id, LocalDateTime fecha, String estado, Integer cantidadProductos, BigDecimal total) {
+        public PedidoResumen(Long id, LocalDateTime fecha, String estado, Integer cantidadProductos,
+                              BigDecimal total, boolean tieneDevolucion) {
             this.id = id;
             this.fecha = fecha;
             this.estado = estado;
             this.cantidadProductos = cantidadProductos;
             this.total = total;
+            this.tieneDevolucion = tieneDevolucion;
         }
 
         public Long getId() { return id; }
@@ -456,6 +509,7 @@ public class ClienteController {
         public String getEstado() { return estado; }
         public Integer getCantidadProductos() { return cantidadProductos; }
         public BigDecimal getTotal() { return total; }
+        public boolean isTieneDevolucion() { return tieneDevolucion; }
     }
 
     public static class DevolucionResumen {

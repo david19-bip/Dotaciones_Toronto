@@ -88,8 +88,18 @@
                                           th:text="${pedido.estado}"></span>
                                 </td>
                                 <td>
-                                    <a href="#" class="text-decoration-none"
-                                       th:onclick="'verDetalle(' + ${pedido.id} + '); return false;'">Ver detalle</a>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <a href="#" class="text-decoration-none"
+                                           th:onclick="'verDetalle(' + ${pedido.id} + '); return false;'">Ver detalle</a>
+                                        <form th:if="${pedido.estado == 'Pendiente'}"
+                                              th:action="@{'/cliente/pedidos/' + ${pedido.id} + '/cancelar'}"
+                                              method="post" class="m-0"
+                                              onsubmit="return confirm('¿Seguro que deseas cancelar este pedido? Esta acción no se puede deshacer.');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2">
+                                                Cancelar
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                             <tr class="fila-vacia-actuales">
@@ -124,8 +134,15 @@
                                           th:text="${pedido.estado}"></span>
                                 </td>
                                 <td>
-                                    <a href="#" class="text-decoration-none"
-                                       th:onclick="'verDetalle(' + ${pedido.id} + '); return false;'">Ver detalle</a>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <a href="#" class="text-decoration-none"
+                                           th:onclick="'verDetalle(' + ${pedido.id} + '); return false;'">Ver detalle</a>
+                                        <a th:if="${pedido.estado == 'Entregado' and !pedido.tieneDevolucion}"
+                                           href="#" class="text-decoration-none text-warning-emphasis"
+                                           th:onclick="'abrirDevolucion(' + ${pedido.id} + '); return false;'">Devolución</a>
+                                        <span th:if="${pedido.estado == 'Entregado' and pedido.tieneDevolucion}"
+                                              class="text-muted small">Devolución solicitada</span>
+                                    </div>
                                 </td>
                             </tr>
                             <tr class="fila-vacia-historial">
@@ -151,6 +168,56 @@
                     <span class="total-label">TOTAL DEL PEDIDO</span>
                     <span class="total-valor" id="modalDetalleTotal">$ 0</span>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal solicitar devolución -->
+    <div class="modal fade" id="modalDevolucion" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                <form th:action="@{/cliente/devoluciones/crear}" method="post" id="formDevolucion">
+                    <input type="hidden" name="idPedido" id="devolucionIdPedido">
+
+                    <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                        <h5 class="modal-title fw-bold" id="modalDevolucionTitulo">Solicitar devolución</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label for="devolucionSelectProducto" class="form-label small fw-semibold text-dark">Producto</label>
+                            <select class="form-select form-select-lg fs-6" name="idProducto" id="devolucionSelectProducto" required disabled>
+                                <option value="" selected>Cargando productos...</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="devolucionInputCantidad" class="form-label small fw-semibold text-dark">Cantidad a devolver</label>
+                            <input type="number" class="form-control form-control-lg fs-6" name="cantidad" id="devolucionInputCantidad" min="1" value="1" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-dark">Motivo</label>
+                            <select class="form-select form-select-lg fs-6" name="motivo" required>
+                                <option value="Talla incorrecta">Talla incorrecta</option>
+                                <option value="Producto defectuoso">Producto defectuoso</option>
+                                <option value="No era lo que pedí">No era lo que pedí</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label small fw-semibold text-dark">Detalle</label>
+                            <textarea class="form-control" name="detalle" rows="3" placeholder="Cuéntanos qué pasó..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
+                        <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-toronto rounded-3 px-4" id="devolucionBtnEnviar" disabled>Enviar solicitud</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -230,6 +297,51 @@
                 totalEl.textContent = formatoMoneda(totalPedido);
             } catch (e) {
                 body.innerHTML = '<p class="text-center text-danger py-4 mb-0">No se pudo cargar el detalle.</p>';
+            }
+        }
+
+        async function abrirDevolucion(idPedido) {
+            document.getElementById('modalDevolucionTitulo').textContent = 'Solicitar devolución - PED-' + idPedido;
+            document.getElementById('devolucionIdPedido').value = idPedido;
+
+            const selectProducto = document.getElementById('devolucionSelectProducto');
+            const inputCantidad = document.getElementById('devolucionInputCantidad');
+            const btnEnviar = document.getElementById('devolucionBtnEnviar');
+
+            selectProducto.innerHTML = '<option value="">Cargando...</option>';
+            selectProducto.disabled = true;
+            btnEnviar.disabled = true;
+            inputCantidad.value = 1;
+
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDevolucion'));
+            modal.show();
+
+            try {
+                const resp = await fetch('/cliente/devoluciones/productos/' + idPedido);
+                const productos = await resp.json();
+
+                if (!productos.length) {
+                    selectProducto.innerHTML = '<option value="">Sin productos disponibles para devolver</option>';
+                    btnEnviar.disabled = true;
+                    return;
+                }
+
+                selectProducto.innerHTML = productos.map(p =>
+                    `<option value="${p.idProducto}" data-max="${p.cantidadComprada}">${p.nombre} (comprados: ${p.cantidadComprada})</option>`
+                ).join('');
+                selectProducto.disabled = false;
+                btnEnviar.disabled = false;
+
+                selectProducto.onchange = () => {
+                    const opcion = selectProducto.selectedOptions[0];
+                    const max = opcion ? opcion.getAttribute('data-max') : 1;
+                    inputCantidad.max = max;
+                    if (Number(inputCantidad.value) > Number(max)) inputCantidad.value = max;
+                };
+                selectProducto.onchange();
+            } catch (e) {
+                selectProducto.innerHTML = '<option value="">Error al cargar productos</option>';
+                btnEnviar.disabled = true;
             }
         }
     </script>

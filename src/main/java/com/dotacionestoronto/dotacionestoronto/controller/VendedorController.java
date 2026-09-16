@@ -333,15 +333,68 @@ public class VendedorController {
     // ==========================================
 
     @GetMapping("/devoluciones")
-    public String devoluciones(Model model) {
+    public String devoluciones(
+            @RequestParam(required = false) String estado,
+            Model model) {
 
-        List<Devolucion> devoluciones =
-                devolucionRepository.findAllByOrderByFechaDevolucionDesc();
+        List<Devolucion> devoluciones;
 
-        model.addAttribute("devoluciones", devoluciones);
+        if (estado != null && !estado.isEmpty()) {
+            devoluciones = devolucionRepository.findByEstado(estado);
+        } else {
+            devoluciones = devolucionRepository.findAllByOrderByFechaDevolucionDesc();
+        }
+
+        // findByEstado no trae orden garantizado, así que se ordena aquí
+        // por fecha descendente en ambos casos.
+        devoluciones.sort((a, b) -> {
+            if (a.getFechaDevolucion() == null || b.getFechaDevolucion() == null) return 0;
+            return b.getFechaDevolucion().compareTo(a.getFechaDevolucion());
+        });
+
+        List<DevolucionVista> devolucionesVista = new ArrayList<>();
+
+        for (Devolucion d : devoluciones) {
+            DevolucionVista dv = new DevolucionVista();
+            dv.devolucion = d;
+
+            DetalleVenta detalleVenta = detalleVentaRepository.findById(d.getIdDetalleVenta()).orElse(null);
+            if (detalleVenta != null) {
+                Producto producto = productoRepository.findById(detalleVenta.getIdProducto()).orElse(null);
+                dv.productoNombre = producto != null ? producto.getNombre() : "Producto eliminado";
+
+                Venta venta = ventaRepository.findById(detalleVenta.getIdVenta()).orElse(null);
+                if (venta != null) {
+                    dv.pedidoRef = venta.getIdPedido() != null ? "PED-" + venta.getIdPedido() : "N/D";
+
+                    Usuario cliente = usuarioRepository.findById(venta.getIdUsuario()).orElse(null);
+                    if (cliente != null) {
+                        dv.clienteNombre = cliente.getNombre();
+                        dv.clienteCorreo = cliente.getCorreo();
+                        dv.clienteTelefono = cliente.getTelefono();
+                        dv.clienteDireccion = cliente.getDireccion();
+                    }
+                }
+            }
+
+            devolucionesVista.add(dv);
+        }
+
+        model.addAttribute("devoluciones", devolucionesVista);
+        model.addAttribute("estadoActivo", estado);
         model.addAttribute("nombre", getUsuarioActual().getNombre());
 
         return "vendedor/devoluciones_vendedor";
+    }
+
+    public static class DevolucionVista {
+        public Devolucion devolucion;
+        public String productoNombre;
+        public String pedidoRef;
+        public String clienteNombre;
+        public String clienteCorreo;
+        public String clienteTelefono;
+        public String clienteDireccion;
     }
 
     @PostMapping("/devoluciones/cambiarEstado")
