@@ -15,7 +15,10 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     // Usado en el panel principal del vendedor
     long countByEstadoAndOcultoFalse(String estado);
 
-    // Usados por el panel y la lista de pedidos del cliente
+    // Usado por el historial de pedidos del cliente (incluye Entregado/Cancelado)
+    List<Pedido> findByIdUsuarioOrderByFechaPedidoDesc(Long idUsuario);
+
+    // Usados por el panel del cliente
     List<Pedido> findByIdUsuarioAndOcultoFalseOrderByFechaPedidoDesc(Long idUsuario);
     long countByIdUsuarioAndEstado(Long idUsuario, String estado);
     long countByIdUsuario(Long idUsuario);

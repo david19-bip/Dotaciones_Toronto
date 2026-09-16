@@ -113,7 +113,7 @@ public class ClienteController {
         Usuario usuario = getUsuarioActual();
 
         List<Pedido> pedidos =
-                pedidoRepository.findByIdUsuarioAndOcultoFalseOrderByFechaPedidoDesc(usuario.getId());
+                pedidoRepository.findByIdUsuarioOrderByFechaPedidoDesc(usuario.getId());
 
         List<PedidoResumen> resumenes = new ArrayList<>();
         for (Pedido p : pedidos) {
