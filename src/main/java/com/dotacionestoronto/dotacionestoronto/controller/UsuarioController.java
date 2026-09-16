@@ -1,15 +1,24 @@
 package com.dotacionestoronto.dotacionestoronto.controller;
 
-import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
-import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
+import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
 
 @Controller
 public class UsuarioController {
+
+    // Rol fijo con el que se registra cualquier usuario que llegue por el
+    // formulario público. Coincide con el id_rol_fk = 2 ('Cliente') de la
+    // tabla `rol`. Ya no se recibe ni se confía en un valor de rol enviado
+    // desde el formulario.
+    private static final Integer ROL_CLIENTE_POR_DEFECTO = 2;
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -35,7 +44,6 @@ public class UsuarioController {
             @RequestParam String telefono,
             @RequestParam String direccion,
             @RequestParam String password,
-            @RequestParam Integer rol,
             Model model) {
 
         if (nombre.isEmpty() || documento.isEmpty() || correo.isEmpty() ||
@@ -66,7 +74,7 @@ public class UsuarioController {
         usuario.setTelefono(telefono);
         usuario.setDireccion(direccion);
         usuario.setContrasena(passwordEncoder.encode(password));
-        usuario.setIdRol(rol);
+        usuario.setIdRol(ROL_CLIENTE_POR_DEFECTO);
         usuario.setEstado("Habilitado");
 
         usuarioRepository.save(usuario);
@@ -74,7 +82,7 @@ public class UsuarioController {
         model.addAttribute("exito", "Usuario registrado correctamente. Ya puedes iniciar sesión.");
         return "redirect:/login?registro";
     }
-    
+
     @GetMapping("/")
     public String index() {
         return "index";
