@@ -1,12 +1,10 @@
 /* =====================================================
-   TEMA VERDE - BODEGUERO
-   Este archivo se carga DESPUÉS de admin.css y solo
-   sobrescribe colores/acentos, no duplica la estructura.
+   TEMA ROJO VINO ELEGANTE Y MODERNO - BODEGUERO
    ===================================================== */
 
-/* ===== FONDO GENERAL DIFUMINADO EN VERDE ===== */
+/* ===== FONDO GENERAL ===== */
 body {
-    background-color: #f7fdf9;
+    background-color: #0f172a;
     background-image: url('/images/fondo_bodeguero.svg');
     background-attachment: fixed;
     background-size: cover;
@@ -14,105 +12,114 @@ body {
     background-repeat: no-repeat;
 }
 
-/* ===== SIDEBAR EN TONOS VERDES ===== */
+/* ===== SIDEBAR EN ROJO VINO DEGRADADO ===== */
 .sidebar {
-  background: linear-gradient(180deg, #0b2e1d 0%, #14432b 50%, #1c5c3a 100%);
+  background: linear-gradient(180deg, #450a0a 0%, #7f1d1d 50%, #2a0808 100%) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .sidebar-brand {
-  color: #4ade80;
-  border-bottom: 1px solid rgba(74, 222, 128, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   text-align: center;
-  padding: 10px 0 25px 0;
+  padding: 15px 0 25px 0;
   margin-bottom: 16px;
 }
 
-/* ===== LOGO Y TÍTULO (ESTILO VENDEDOR ADAPTADO A VERDE) ===== */
-.brand-logo {
-    width: 100px;
-    height: 100px;
+/* ===== LOGO BLANCO BRILLANTE ===== */
+.brand-logo, 
+.sidebar-brand img {
+    width: 90px;
+    height: auto;
     object-fit: contain;
     display: block;
-    margin: 0 auto 10px;
-    filter: drop-shadow(0 4px 12px rgba(74, 222, 128, 0.35));
+    margin: 0 auto 12px;
+    filter: brightness(0) invert(1); /* Pasa el logo a blanco totalmente legible */
     transition: transform 0.3s ease;
 }
 
-.brand-logo:hover {
-    transform: scale(1.05) rotate(-2deg);
+.brand-logo:hover,
+.sidebar-brand img:hover {
+    transform: scale(1.05);
 }
 
-.brand-title {
-    background: linear-gradient(135deg, #4ade80, #16a34a);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+/* ===== TÍTULOS Y ROL ===== */
+.sidebar-brand .badge,
+.sidebar-brand span,
+.sidebar-brand p {
+    color: #4cff05 !important; /* Rojo claro / Coral suave para 'BODEGUERO' */
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.brand-title,
+.sidebar-brand div,
+.sidebar-brand h1, 
+.sidebar-brand h2, 
+.sidebar-brand h3 {
+    color: #fafafa !important; /* Blanco puro para 'Dotaciones Toronto' */
+    -webkit-text-fill-color: #ffffff !important;
     font-weight: 800;
-    font-size: 0.95rem;
+    font-size: 1.1rem;
     letter-spacing: 0.5px;
-    text-align: center;
+    margin-top: 4px;
 }
 
+/* ===== MENÚ Y ENLACES DEL SIDEBAR ===== */
 .sidebar a {
-  color: #a7d9bb;
+  color: #fecdd3 !important; /* Rosa/Blanco suave de alto contraste */
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
 }
 
 .sidebar a:hover,
 .sidebar a.active {
-  background-color: rgba(74, 222, 128, 0.12);
-  color: #4ade80;
-  border-left: 3px solid #4ade80;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  border-left: 4px solid #f87171 !important;
+  font-weight: 700;
 }
 
-/* Empuja el botón de Cerrar sesión hasta el fondo del sidebar */
+/* Botón Cerrar Sesión */
+.sidebar form button {
+  color: #fca5a5 !important;
+  font-weight: 600;
+}
+
+.sidebar form button:hover {
+  color: #ffffff !important;
+}
+
 .sidebar form {
   margin-top: auto;
   padding: 10px 20px 20px;
 }
 
-/* ===== BOTONES EN TONOS VERDES ===== */
+/* ===== BOTONES EN BLANCO LIMPIO ===== */
 .btn-primary {
-  background-color: #16a34a !important;
-  border-color: #16a34a !important;
-  color: #ffffff !important;
+  background-color: #ffffff !important;
+  border-color: #ffffff !important;
+  color: #991b1b !important; /* Texto rojo oscuro para el botón blanco */
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .btn-primary:hover,
 .btn-primary:focus {
-  background-color: #15803d !important;
-  border-color: #15803d !important;
+  background-color: #fecdd3 !important;
+  border-color: #fecdd3 !important;
+  color: #7f1d1d !important;
 }
 
-.btn-success {
-  background-color: #22c55e !important;
-  border-color: #22c55e !important;
-}
-
-.btn-success:hover,
-.btn-success:focus {
-  background-color: #16a34a !important;
-  border-color: #16a34a !important;
-}
-
-.btn-admin {
-  background-color: #16a34a;
-}
-
-.btn-admin:hover {
-  background-color: #15803d;
-}
-
-/* ===== ÍCONOS Y TEXTOS DE ACENTO (tarjetas de resumen) ===== */
-.text-primary {
-  color: #16a34a !important;
-}
-
-.bg-primary {
-  background-color: rgba(22, 163, 74, var(--bs-bg-opacity, 1)) !important;
-}
-
-/* ===== FOCO DE FORMULARIOS EN VERDE ===== */
+/* ===== FOCO DE FORMULARIOS ===== */
 .form-control:focus,
 .form-select:focus {
-  border-color: #4ade80;
-  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.15);
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
 }
