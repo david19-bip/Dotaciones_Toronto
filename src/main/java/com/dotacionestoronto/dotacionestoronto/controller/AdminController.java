@@ -711,8 +711,17 @@ public class AdminController {
 
     // ===== DEVOLUCIONES =====
     @GetMapping("/devoluciones")
-    public String devoluciones(Model model) {
+    public String devoluciones(
+            @RequestParam(required = false) String estado,
+            Model model) {
         List<Devolucion> devoluciones = devolucionRepository.findAllByOrderByFechaDevolucionDesc();
+
+        if (estado != null && !estado.isBlank()) {
+            devoluciones = devoluciones.stream()
+                    .filter(d -> estado.equals(d.getEstado()))
+                    .toList();
+        }
+
         model.addAttribute("devoluciones", devoluciones);
         model.addAttribute("nombre", getUsuarioActual().getNombre());
         return "admin/devoluciones_admin";

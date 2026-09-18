@@ -42,8 +42,6 @@
                th:class="${estadoActivo == 'Pendiente'} ? 'btn btn-sm btn-warning text-dark' : 'btn btn-sm btn-outline-warning'">Pendientes</a>
             <a href="/vendedor/pedidos?estado=Enviado"
                th:class="${estadoActivo == 'Enviado'} ? 'btn btn-sm btn-info text-dark' : 'btn btn-sm btn-outline-info'">Enviados</a>
-            <a href="/vendedor/pedidos?estado=Entregado"
-               th:class="${estadoActivo == 'Entregado'} ? 'btn btn-sm btn-success' : 'btn btn-sm btn-outline-success'">Entregados</a>
             <a href="/vendedor/pedidos?estado=Cancelado"
                th:class="${estadoActivo == 'Cancelado'} ? 'btn btn-sm btn-danger' : 'btn btn-sm btn-outline-danger'">Cancelados</a>
         </div>
