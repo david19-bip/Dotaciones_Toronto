@@ -76,13 +76,13 @@
                                placeholder="correo@ejemplo.com" required>
                         <div class="invalid-feedback">Correo inválido.</div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Teléfono</label>
-                        <input type="text" name="telefono" id="telefono" class="form-control"
-                               placeholder="Número telefónico"
-                               pattern="[0-9]+" minlength="7" maxlength="15" required>
-                        <div class="invalid-feedback">Entre 7 y 15 dígitos.</div>
-                    </div>
+<div class="col-md-6">
+    <label class="form-label fw-semibold">Teléfono</label>
+    <input type="text" name="telefono" id="telefono" class="form-control"
+           placeholder="Ej: 573001234567 (con indicativo)"
+           pattern="[0-9]+" minlength="7" maxlength="15" required>
+    <div class="invalid-feedback">Entre 7 y 15 dígitos (puede incluir el indicativo del país).</div>
+</div>
                 </div>
 
                 <div class="mb-2">
