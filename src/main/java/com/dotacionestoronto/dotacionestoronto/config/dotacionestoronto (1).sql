@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 18-09-2026 a las 19:55:52
+-- Tiempo de generación: 22-09-2026 a las 16:24:54
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -334,6 +334,31 @@ INSERT INTO `usuario` (`id_usuario`, `nombre`, `documento`, `correo`, `telefono`
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `usuario_rol`
+--
+
+CREATE TABLE `usuario_rol` (
+  `id_usuario_rol` int(11) NOT NULL,
+  `id_usuario_fk` bigint(20) NOT NULL,
+  `id_rol_fk` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `usuario_rol`
+--
+
+INSERT INTO `usuario_rol` (`id_usuario_rol`, `id_usuario_fk`, `id_rol_fk`) VALUES
+(1, 12, 1),
+(8, 12, 3),
+(3, 13, 2),
+(5, 14, 3),
+(6, 15, 4),
+(2, 16, 1),
+(4, 17, 2);
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `venta`
 --
 
@@ -456,6 +481,14 @@ ALTER TABLE `usuario`
   ADD KEY `id_rol_fk` (`id_rol_fk`);
 
 --
+-- Indices de la tabla `usuario_rol`
+--
+ALTER TABLE `usuario_rol`
+  ADD PRIMARY KEY (`id_usuario_rol`),
+  ADD UNIQUE KEY `uk_usuario_rol` (`id_usuario_fk`,`id_rol_fk`),
+  ADD KEY `fk_usuario_rol_rol` (`id_rol_fk`);
+
+--
 -- Indices de la tabla `venta`
 --
 ALTER TABLE `venta`
@@ -552,6 +585,12 @@ ALTER TABLE `usuario`
   MODIFY `id_usuario` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
+-- AUTO_INCREMENT de la tabla `usuario_rol`
+--
+ALTER TABLE `usuario_rol`
+  MODIFY `id_usuario_rol` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
 -- AUTO_INCREMENT de la tabla `venta`
 --
 ALTER TABLE `venta`
@@ -629,6 +668,13 @@ ALTER TABLE `pedido`
 --
 ALTER TABLE `usuario`
   ADD CONSTRAINT `fk_usuario_rol` FOREIGN KEY (`id_rol_fk`) REFERENCES `rol` (`id_rol`);
+
+--
+-- Filtros para la tabla `usuario_rol`
+--
+ALTER TABLE `usuario_rol`
+  ADD CONSTRAINT `fk_usuario_rol_rol` FOREIGN KEY (`id_rol_fk`) REFERENCES `rol` (`id_rol`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_usuario_rol_usuario` FOREIGN KEY (`id_usuario_fk`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `venta`
