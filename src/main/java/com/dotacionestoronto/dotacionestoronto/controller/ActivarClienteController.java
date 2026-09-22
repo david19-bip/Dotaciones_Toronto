@@ -13,6 +13,8 @@ import com.dotacionestoronto.dotacionestoronto.entity.UsuarioRol;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRolRepository;
 
+import jakarta.servlet.http.HttpSession;
+
 @Controller
 public class ActivarClienteController {
 
@@ -23,21 +25,24 @@ public class ActivarClienteController {
     private UsuarioRolRepository usuarioRolRepository;
 
     @PostMapping("/activar-cliente")
-    public String activarCliente() {
+    public String activarCliente(HttpSession session) {
 
         Authentication authentication =
                 SecurityContextHolder
                         .getContext()
                         .getAuthentication();
 
+        // Verificamos que exista una sesión autenticada
         if (authentication == null
                 || !authentication.isAuthenticated()) {
 
             return "redirect:/login";
         }
 
+        // Obtenemos el correo del usuario actualmente autenticado
         String correo = authentication.getName();
 
+        // Buscamos al usuario en la base de datos
         Usuario usuario =
                 usuarioRepository.findByCorreo(correo);
 
@@ -46,14 +51,18 @@ public class ActivarClienteController {
         }
 
         /*
-         * Verificamos los roles reales que tiene
-         * el usuario en la base de datos.
+         * Obtenemos todos los roles que tiene
+         * actualmente el usuario.
          */
         List<UsuarioRol> rolesUsuario =
                 usuarioRolRepository.findByIdUsuario(
                         usuario.getId()
                 );
 
+        /*
+         * Solo Administrador, Vendedor o Bodeguero
+         * pueden activar el rol Cliente.
+         */
         boolean puedeActivarCliente =
                 rolesUsuario.stream()
                         .anyMatch(rol ->
@@ -63,10 +72,11 @@ public class ActivarClienteController {
                         );
 
         /*
-         * Si solamente es Cliente, no puede
-         * utilizar esta función.
+         * Si solamente es Cliente, no puede utilizar
+         * esta función para obtener otros privilegios.
          */
         if (!puedeActivarCliente) {
+
             return "redirect:/cliente/panel?error=rol";
         }
 
@@ -81,8 +91,8 @@ public class ActivarClienteController {
                         );
 
         /*
-         * Si todavía no es Cliente, lo agregamos.
-         * NO eliminamos ninguno de sus otros roles.
+         * Si todavía no tiene Cliente,
+         * lo agregamos sin eliminar los demás roles.
          */
         if (!yaEsCliente) {
 
@@ -95,40 +105,90 @@ public class ActivarClienteController {
             usuarioRolRepository.save(nuevoRolCliente);
         }
 
-        return redireccionarSegunRolActivo();
-    }
+        /*
+         * Volvemos a consultar los roles para tener
+         * la lista actualizada.
+         */
+        List<UsuarioRol> rolesActualizados =
+                usuarioRolRepository.findByIdUsuario(
+                        usuario.getId()
+                );
 
-    private String redireccionarSegunRolActivo() {
+        /*
+         * Guardamos los roles actualizados en sesión.
+         * Esto permite que aparezca "Cambiar rol"
+         * inmediatamente, sin cerrar sesión.
+         */
+        session.setAttribute(
+                "rolesDisponibles",
+                rolesActualizados
+        );
 
-        Authentication authentication =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
+        /*
+         * Mantenemos al usuario en el rol que
+         * actualmente estaba utilizando.
+         */
+        String rolActivo =
+                (String) session.getAttribute("rolActivo");
 
-        if (authentication.getAuthorities().stream()
-                .anyMatch(a ->
-                        a.getAuthority()
-                                .equals("ROLE_ADMIN"))) {
+        /*
+         * Si por alguna razón no existe rolActivo,
+         * usamos la autoridad actual de Spring Security.
+         */
+        if (rolActivo == null) {
 
-            return "redirect:/admin/panel";
+            if (authentication.getAuthorities().stream()
+                    .anyMatch(a ->
+                            a.getAuthority()
+                                    .equals("ROLE_ADMIN"))) {
+
+                rolActivo = "ROLE_ADMIN";
+
+            } else if (authentication.getAuthorities().stream()
+                    .anyMatch(a ->
+                            a.getAuthority()
+                                    .equals("ROLE_VENDEDOR"))) {
+
+                rolActivo = "ROLE_VENDEDOR";
+
+            } else if (authentication.getAuthorities().stream()
+                    .anyMatch(a ->
+                            a.getAuthority()
+                                    .equals("ROLE_BODEGUERO"))) {
+
+                rolActivo = "ROLE_BODEGUERO";
+
+            } else {
+
+                rolActivo = "ROLE_CLIENTE";
+            }
+
+            session.setAttribute(
+                    "rolActivo",
+                    rolActivo
+            );
         }
 
-        if (authentication.getAuthorities().stream()
-                .anyMatch(a ->
-                        a.getAuthority()
-                                .equals("ROLE_VENDEDOR"))) {
+        /*
+         * Redirigimos al panel correspondiente
+         * al rol que estaba utilizando.
+         */
+        return switch (rolActivo) {
 
-            return "redirect:/vendedor/panel";
-        }
+            case "ROLE_ADMIN" ->
+                    "redirect:/admin/panel";
 
-        if (authentication.getAuthorities().stream()
-                .anyMatch(a ->
-                        a.getAuthority()
-                                .equals("ROLE_BODEGUERO"))) {
+            case "ROLE_VENDEDOR" ->
+                    "redirect:/vendedor/panel";
 
-            return "redirect:/bodeguero/panel";
-        }
+            case "ROLE_BODEGUERO" ->
+                    "redirect:/bodeguero/panel";
 
-        return "redirect:/login";
+            case "ROLE_CLIENTE" ->
+                    "redirect:/cliente/panel";
+
+            default ->
+                    "redirect:/login";
+        };
     }
 }

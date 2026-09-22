@@ -1,359 +1,1470 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
     <title>Usuarios - Dotaciones Toronto</title>
+
     <!-- Bootstrap 5 CSS & Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+        rel="stylesheet">
+
     <!-- Estilo unificado del Admin -->
-    <link th:href="@{/css/admin.css}" rel="stylesheet">
+    <link
+        th:href="@{/css/admin.css}"
+        rel="stylesheet">
 
 </head>
+
 <body>
 
-    <!-- Sidebar Administrador -->
+    <!-- =========================================================
+         SIDEBAR ADMINISTRADOR
+         ========================================================= -->
+
     <div class="sidebar">
+
         <div class="sidebar-brand">
-            <img th:src="@{/images/logo blanco.png}" 
-                 alt="Logo Dotaciones Toronto" 
-                 style="width: 140px; height: auto; object-fit: contain; display: block; margin: 0 auto 8px;">
-            <div style="color: #ffffff; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.5px; text-align: center;">
+
+            <img
+                th:src="@{/images/logo blanco.png}"
+                alt="Logo Dotaciones Toronto"
+                style="width: 140px;
+                       height: auto;
+                       object-fit: contain;
+                       display: block;
+                       margin: 0 auto 8px;">
+
+            <div
+                style="color: #ffffff;
+                       font-weight: 700;
+                       font-size: 0.95rem;
+                       letter-spacing: 0.5px;
+                       text-align: center;">
+
                 Dotaciones Toronto
+
             </div>
+
             <span class="role-badge">
-                <i class="bi bi-shield-lock-fill me-1"></i> Administrador
+
+                <i class="bi bi-shield-lock-fill me-1"></i>
+
+                Administrador
+
             </span>
+
         </div>
 
-        <a href="/admin/panel" ><i class="bi bi-speedometer2"></i> Inicio</a>
-        <a href="/admin/perfil"><i class="bi bi-person-circle"></i> Perfil</a>
-        <a href="/admin/usuarios"class="active"><i class="bi bi-people"></i> Usuarios</a>
-        <a href="/admin/productos"><i class="bi bi-box-seam"></i> Productos</a>
-        <a href="/admin/inventario"><i class="bi bi-archive"></i> Inventario</a>
-        <a href="/admin/pedidos"><i class="bi bi-bag-check"></i> Pedidos</a>
-        <a href="/admin/ventas"><i class="bi bi-bag-check"></i> ventas</a>
-        <a href="/admin/devoluciones"><i class="bi bi-arrow-return-left"></i> Devoluciones</a>
-        
-        <div style="padding: 15px 24px; margin-top: auto;">
-            <form th:action="@{/logout}" method="post">
-                <button type="submit" class="btn btn-link text-white text-decoration-none p-0 border-0 bg-transparent">
-                    <i class="bi bi-box-arrow-right me-1"></i> Cerrar sesión
+
+        <a href="/admin/panel">
+
+            <i class="bi bi-speedometer2"></i>
+
+            Inicio
+
+        </a>
+
+
+        <a href="/admin/perfil">
+
+            <i class="bi bi-person-circle"></i>
+
+            Perfil
+
+        </a>
+
+
+        <a href="/admin/usuarios"
+           class="active">
+
+            <i class="bi bi-people"></i>
+
+            Usuarios
+
+        </a>
+
+
+        <a href="/admin/productos">
+
+            <i class="bi bi-box-seam"></i>
+
+            Productos
+
+        </a>
+
+
+        <a href="/admin/inventario">
+
+            <i class="bi bi-archive"></i>
+
+            Inventario
+
+        </a>
+
+
+        <a href="/admin/pedidos">
+
+            <i class="bi bi-bag-check"></i>
+
+            Pedidos
+
+        </a>
+
+
+        <a href="/admin/ventas">
+
+            <i class="bi bi-bag-check"></i>
+
+            ventas
+
+        </a>
+
+
+        <a href="/admin/devoluciones">
+
+            <i class="bi bi-arrow-return-left"></i>
+
+            Devoluciones
+
+        </a>
+
+
+        <div
+            style="padding: 15px 24px;
+                   margin-top: auto;">
+
+            <form
+                th:action="@{/logout}"
+                method="post">
+
+                <button
+                    type="submit"
+                    class="btn btn-link text-white text-decoration-none p-0 border-0 bg-transparent">
+
+                    <i class="bi bi-box-arrow-right me-1"></i>
+
+                    Cerrar sesión
+
                 </button>
+
             </form>
+
         </div>
+
     </div>
 
-    <!-- Contenido principal -->
+
+    <!-- =========================================================
+         CONTENIDO PRINCIPAL
+         ========================================================= -->
+
     <div class="main-content">
-        <!-- Encabezado -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
+
+
+        <!-- =====================================================
+             ENCABEZADO
+             ===================================================== -->
+
+        <div
+            class="d-flex
+                   justify-content-between
+                   align-items-center
+                   mb-4">
+
             <div>
-                <h3 class="fw-bold text-dark mb-1">Gestión de Usuarios</h3>
-                <p class="text-muted mb-0">Administra y registra las cuentas activas del sistema</p>
+
+                <h3
+                    class="fw-bold text-dark mb-1">
+
+                    Gestión de Usuarios
+
+                </h3>
+
+                <p
+                    class="text-muted mb-0">
+
+                    Administra y registra las cuentas activas
+                    del sistema
+
+                </p>
+
             </div>
+
+
             <div class="d-flex gap-2">
-                <a th:href="@{/admin/usuarios/reporte}" target="_blank" class="btn btn-reporte shadow-sm">
-                    <i class="bi bi-file-earmark-pdf-fill me-1"></i> Reporte PDF
+
+                <!-- REPORTE PDF -->
+
+                <a
+                    th:href="@{/admin/usuarios/reporte}"
+                    target="_blank"
+                    class="btn btn-reporte shadow-sm">
+
+                    <i
+                        class="bi bi-file-earmark-pdf-fill me-1">
+                    </i>
+
+                    Reporte PDF
+
                 </a>
-                <a th:href="@{/admin/usuarios/reporte/excel}" class="btn btn-reporte-excel shadow-sm">
-                    <i class="bi bi-file-earmark-excel-fill me-1"></i> Reporte Excel
+
+
+                <!-- REPORTE EXCEL -->
+
+                <a
+                    th:href="@{/admin/usuarios/reporte/excel}"
+                    class="btn btn-reporte-excel shadow-sm">
+
+                    <i
+                        class="bi bi-file-earmark-excel-fill me-1">
+                    </i>
+
+                    Reporte Excel
+
                 </a>
-                <button class="btn btn-admin shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCrearUsuario">
-                    <i class="bi bi-person-plus me-1"></i> Nuevo Usuario
+
+
+                <!-- NUEVO USUARIO -->
+
+                <button
+                    class="btn btn-admin shadow-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalCrearUsuario">
+
+                    <i
+                        class="bi bi-person-plus me-1">
+                    </i>
+
+                    Nuevo Usuario
+
                 </button>
+
             </div>
+
         </div>
 
-        <!-- Alertas -->
-        <div th:if="${exito}" class="alert alert-success alert-dismissible fade show p-3 mb-4" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i><span th:text="${exito}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show p-3 mb-4" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${error}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+
+        <!-- =====================================================
+             ALERTAS
+             ===================================================== -->
+
+        <div
+            th:if="${exito}"
+            class="alert alert-success alert-dismissible fade show p-3 mb-4"
+            role="alert">
+
+            <i
+                class="bi bi-check-circle-fill me-2">
+            </i>
+
+            <span th:text="${exito}">
+            </span>
+
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close">
+            </button>
+
         </div>
 
-        <!-- Barra de búsqueda y filtros -->
-        <div class="filtros-card shadow-sm mb-3">
-            <div class="row g-2 align-items-center">
+
+        <div
+            th:if="${error}"
+            class="alert alert-danger alert-dismissible fade show p-3 mb-4"
+            role="alert">
+
+            <i
+                class="bi bi-exclamation-triangle-fill me-2">
+            </i>
+
+            <span th:text="${error}">
+            </span>
+
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close">
+            </button>
+
+        </div>
+
+
+        <!-- =====================================================
+             BARRA DE BÚSQUEDA Y FILTROS
+             ===================================================== -->
+
+        <div
+            class="filtros-card shadow-sm mb-3">
+
+            <div
+                class="row g-2 align-items-center">
+
+
+                <!-- BÚSQUEDA -->
+
                 <div class="col-md-5">
+
                     <div class="input-busqueda">
+
                         <i class="bi bi-search"></i>
-                        <input type="text" id="inputBusqueda" class="form-control" placeholder="Buscar por nombre, documento, correo o teléfono...">
+
+                        <input
+                            type="text"
+                            id="inputBusqueda"
+                            class="form-control"
+                            placeholder="Buscar por nombre, documento, correo o teléfono...">
+
                     </div>
+
                 </div>
-                <div class="col-md-3 col-6">
-                    <select id="filtroRol" class="form-select">
-                        <option value="">Todos los roles</option>
-                        <option value="Admin">Administrador</option>
-                        <option value="Cliente">Cliente</option>
-                        <option value="Vendedor">Vendedor</option>
-                        <option value="Bodeguero">Bodeguero</option>
+
+
+                <!-- FILTRO ROL -->
+
+                <div
+                    class="col-md-3 col-6">
+
+                    <select
+                        id="filtroRol"
+                        class="form-select">
+
+                        <option value="">
+                            Todos los roles
+                        </option>
+
+                        <option value="Admin">
+                            Administrador
+                        </option>
+
+                        <option value="Cliente">
+                            Cliente
+                        </option>
+
+                        <option value="Vendedor">
+                            Vendedor
+                        </option>
+
+                        <option value="Bodeguero">
+                            Bodeguero
+                        </option>
+
                     </select>
+
                 </div>
-                <div class="col-md-2 col-6">
-                    <select id="filtroEstado" class="form-select">
-                        <option value="">Todos</option>
-                        <option value="Habilitado">Habilitados</option>
-                        <option value="Inhabilitado">Inhabilitados</option>
+
+
+                <!-- FILTRO ESTADO -->
+
+                <div
+                    class="col-md-2 col-6">
+
+                    <select
+                        id="filtroEstado"
+                        class="form-select">
+
+                        <option value="">
+                            Todos
+                        </option>
+
+                        <option value="Habilitado">
+                            Habilitados
+                        </option>
+
+                        <option value="Inhabilitado">
+                            Inhabilitados
+                        </option>
+
                     </select>
+
                 </div>
+
+
+                <!-- LIMPIAR -->
+
                 <div class="col-md-2">
-                    <button type="button" id="btnLimpiarFiltros" class="btn btn-limpiar-filtros w-100">
-                        <i class="bi bi-x-circle me-1"></i> Limpiar
+
+                    <button
+                        type="button"
+                        id="btnLimpiarFiltros"
+                        class="btn btn-limpiar-filtros w-100">
+
+                        <i
+                            class="bi bi-x-circle me-1">
+                        </i>
+
+                        Limpiar
+
                     </button>
+
                 </div>
+
             </div>
-            <div class="mt-2 text-muted" id="contadorResultados"></div>
+
+
+            <!-- CONTADOR -->
+
+            <div
+                class="mt-2 text-muted"
+                id="contadorResultados">
+            </div>
+
         </div>
 
-        <!-- Tabla de usuarios dentro de tarjeta Glass -->
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-0 overflow-hidden" style="border-radius: 14px;">
+
+        <!-- =====================================================
+             TABLA DE USUARIOS
+             ===================================================== -->
+
+        <div
+            class="card border-0 shadow-sm rounded-4">
+
+            <div
+                class="card-body p-0 overflow-hidden"
+                style="border-radius: 14px;">
+
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" id="tablaUsuarios">
+
+                    <table
+                        class="table table-hover align-middle mb-0"
+                        id="tablaUsuarios">
+
                         <thead>
+
                             <tr>
-                                <th class="p-3 ps-4"># ID</th>
-                                <th class="p-3">Nombre</th>
-                                <th class="p-3">Documento</th>
-                                <th class="p-3">Correo</th>
-                                <th class="p-3">Teléfono</th>
-                                <th class="p-3 text-center">Rol</th>
-                                <th class="p-3 text-center">Estado</th>
-                                <th class="p-3 text-end pe-4">Acciones</th>
+
+                                <!--
+                                    CAMBIO:
+                                    Documento ahora es la primera columna.
+                                    Se eliminó # ID.
+                                -->
+
+                                <th class="p-3 ps-4">
+                                    Documento
+                                </th>
+
+                                <th class="p-3">
+                                    Nombre
+                                </th>
+
+                                <th class="p-3">
+                                    Correo
+                                </th>
+
+                                <th class="p-3">
+                                    Teléfono
+                                </th>
+
+                                <th class="p-3 text-center">
+                                    Rol
+                                </th>
+
+                                <th class="p-3 text-center">
+                                    Estado
+                                </th>
+
+                                <th class="p-3 text-end pe-4">
+                                    Acciones
+                                </th>
+
                             </tr>
+
                         </thead>
+
+
                         <tbody>
-                            <tr th:if="${#lists.isEmpty(usuarios)}">
-                                <td colspan="8" class="text-center p-4 text-muted">No hay usuarios registrados en la base de datos.</td>
+
+
+                            <!-- =================================================
+                                 SIN USUARIOS
+                                 ================================================= -->
+
+                            <tr
+                                th:if="${#lists.isEmpty(usuarios)}">
+
+                                <td
+                                    colspan="7"
+                                    class="text-center p-4 text-muted">
+
+                                    No hay usuarios registrados
+                                    en la base de datos.
+
+                                </td>
+
                             </tr>
-                            <tr th:each="usuario : ${usuarios}"
+
+
+                            <!-- =================================================
+                                 USUARIOS
+                                 ================================================= -->
+
+                            <tr
+                                th:each="usuario : ${usuarios}"
                                 class="fila-usuario"
-                                th:attr="data-rol=${usuario.idRol == 1 ? 'Admin' : (usuario.idRol == 2 ? 'Cliente' : (usuario.idRol == 3 ? 'Vendedor' : 'Bodeguero'))},
-                                         data-estado=${usuario.estado},
-                                         data-busqueda=${#strings.toLowerCase(usuario.nombre + ' ' + usuario.documento + ' ' + usuario.correo + ' ' + usuario.telefono)}">
-                                <td class="p-3 ps-4 fw-bold text-secondary" th:text="${'#' + usuario.id}">#1</td>
-                                <td class="p-3 fw-semibold text-dark" th:text="${usuario.nombre}">Carlos Pérez</td>
-                                <td class="p-3" th:text="${usuario.documento}">1010123456</td>
-                                <td class="p-3" th:text="${usuario.correo}">carlos@ejemplo.com</td>
-                                <td class="p-3" th:text="${usuario.telefono}">3001234567</td>
-                                <td class="p-3 text-center">
-                                    <span th:class="${'badge ' +
-                                        (usuario.idRol == 1 ? 'rol-admin' :
-                                        (usuario.idRol == 2 ? 'rol-cliente' :
-                                        (usuario.idRol == 3 ? 'rol-vendedor' : 'rol-bodeguero')))}"
-                                          th:text="${usuario.idRol == 1 ? 'Admin' :
-                                        (usuario.idRol == 2 ? 'Cliente' :
-                                        (usuario.idRol == 3 ? 'Vendedor' : 'Bodeguero'))}">
-                                    </span>
+
+                                th:attr="
+                                    data-rol=${rolesFiltroPorUsuario[usuario.id]},
+                                    data-estado=${usuario.estado},
+                                    data-busqueda=${#strings.toLowerCase(
+                                        usuario.nombre + ' ' +
+                                        usuario.documento + ' ' +
+                                        usuario.correo + ' ' +
+                                        usuario.telefono
+                                    )}">
+
+
+                                <!-- DOCUMENTO -->
+
+                                <td
+                                    class="p-3 ps-4 fw-bold text-secondary"
+                                    th:text="${usuario.documento}">
+
+                                    1010123456
+
                                 </td>
-                                <td class="p-3 text-center">
-                                    <span th:class="${'badge ' + (usuario.estado == 'Habilitado' ? 'bg-success' : 'bg-secondary')}"
-                                          th:text="${usuario.estado}">
-                                    </span>
+
+
+                                <!-- NOMBRE -->
+
+                                <td
+                                    class="p-3 fw-semibold text-dark"
+                                    th:text="${usuario.nombre}">
+
+                                    Carlos Pérez
+
                                 </td>
-                                <td class="p-3 text-end pe-4">
-                                    <!-- Botón de Modificar con Lápiz -->
-                                    <a th:href="@{/admin/usuarios/editar(id=${usuario.id})}" class="btn btn-sm btn-outline-primary me-1" title="Modificar">
-                                        <i class="bi bi-pencil-fill"></i>
+
+
+                                <!-- CORREO -->
+
+                                <td
+                                    class="p-3"
+                                    th:text="${usuario.correo}">
+
+                                    carlos@ejemplo.com
+
+                                </td>
+
+
+                                <!-- TELÉFONO -->
+
+                                <td
+                                    class="p-3"
+                                    th:text="${usuario.telefono}">
+
+                                    3001234567
+
+                                </td>
+
+
+                                <!-- =================================================
+                                     TODOS LOS ROLES DEL USUARIO
+                                     ================================================= -->
+
+                                <td class="p-3 text-center">
+
+                                    <div
+                                        class="d-flex
+                                               flex-wrap
+                                               justify-content-center
+                                               gap-1">
+
+                                        <span
+                                            th:each="nombreRol : ${nombresRolesPorUsuario[usuario.id]}"
+
+                                            th:class="${nombreRol == 'Admin'
+                                                ? 'badge rol-admin'
+                                                : (nombreRol == 'Cliente'
+                                                ? 'badge rol-cliente'
+                                                : (nombreRol == 'Vendedor'
+                                                ? 'badge rol-vendedor'
+                                                : 'badge rol-bodeguero'))}"
+
+                                            th:text="${nombreRol}">
+
+                                            Admin
+
+                                        </span>
+
+                                    </div>
+
+                                </td>
+
+
+                                <!-- ESTADO -->
+
+                                <td
+                                    class="p-3 text-center">
+
+                                    <span
+                                        th:class="${'badge ' +
+                                            (usuario.estado == 'Habilitado'
+                                                ? 'bg-success'
+                                                : 'bg-secondary')}"
+
+                                        th:text="${usuario.estado}">
+
+                                        Habilitado
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- =================================================
+                                     ACCIONES
+                                     ================================================= -->
+
+                                <td
+                                    class="p-3 text-end pe-4">
+
+
+                                    <!-- MODIFICAR -->
+
+                                    <a
+                                        th:href="@{/admin/usuarios/editar(id=${usuario.id})}"
+                                        class="btn btn-sm btn-outline-primary me-1"
+                                        title="Modificar">
+
+                                        <i
+                                            class="bi bi-pencil-fill">
+                                        </i>
+
                                     </a>
 
-                                    <!-- Formulario existente para Inhabilitar / Habilitar -->
-                                    <form th:action="@{/admin/usuarios/toggleEstado}" method="post" class="d-inline">
-                                        <input type="hidden" name="idUsuario" th:value="${usuario.id}">
-                                        <button type="submit"
-                                                th:class="${'btn btn-sm ' + (usuario.estado == 'Habilitado' ? 'btn-outline-danger' : 'btn-outline-success')}"
-                                                th:title="${usuario.estado == 'Habilitado' ? 'Inhabilitar' : 'Habilitar'}">
-                                                <i th:if="${usuario.estado == 'Habilitado'}" class="bi bi-trash"></i>
-                                                <i th:unless="${usuario.estado == 'Habilitado'}" class="bi bi-check-circle"></i>
+
+                                    <!--
+                                        HABILITAR / INHABILITAR
+
+                                        Se mantiene exactamente la ruta
+                                        que utilizaba tu HTML original.
+                                    -->
+
+                                    <form
+                                        th:action="@{/admin/usuarios/toggleEstado}"
+                                        method="post"
+                                        class="d-inline">
+
+                                        <input
+                                            type="hidden"
+                                            name="idUsuario"
+                                            th:value="${usuario.id}">
+
+                                        <button
+                                            type="submit"
+
+                                            th:class="${'btn btn-sm ' +
+                                                (usuario.estado == 'Habilitado'
+                                                    ? 'btn-outline-danger'
+                                                    : 'btn-outline-success')}"
+
+                                            th:title="${usuario.estado == 'Habilitado'
+                                                ? 'Inhabilitar'
+                                                : 'Habilitar'}">
+
+                                            <i
+                                                th:if="${usuario.estado == 'Habilitado'}"
+                                                class="bi bi-trash">
+                                            </i>
+
+                                            <i
+                                                th:unless="${usuario.estado == 'Habilitado'}"
+                                                class="bi bi-check-circle">
+                                            </i>
+
                                         </button>
+
                                     </form>
+
                                 </td>
+
                             </tr>
-                            <tr id="filaSinResultados" style="display: none;">
-                                <td colspan="8" class="text-center p-4 text-muted">
-                                    <i class="bi bi-search me-1"></i> No se encontraron usuarios que coincidan con la búsqueda.
+
+
+                            <!-- =================================================
+                                 SIN RESULTADOS DEL FILTRO
+                                 ================================================= -->
+
+                            <tr
+                                id="filaSinResultados"
+                                style="display: none;">
+
+                                <td
+                                    colspan="7"
+                                    class="text-center p-4 text-muted">
+
+                                    <i
+                                        class="bi bi-search me-1">
+                                    </i>
+
+                                    No se encontraron usuarios
+                                    que coincidan con la búsqueda.
+
                                 </td>
+
                             </tr>
+
                         </tbody>
+
                     </table>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
 
-    <!-- Modal Crear Usuario -->
-    <div class="modal fade" id="modalCrearUsuario" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4">
-                <div class="modal-header border-0 pb-0 pt-4 px-4">
-                    <h5 class="modal-title fw-bold text-dark"><i class="bi bi-person-plus me-2 text-primary"></i>Nuevo Usuario</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
+    <!-- =========================================================
+         MODAL CREAR USUARIO
+         ========================================================= -->
+
+    <div
+        class="modal fade"
+        id="modalCrearUsuario"
+        tabindex="-1"
+        aria-hidden="true">
+
+        <div
+            class="modal-dialog modal-dialog-centered">
+
+            <div
+                class="modal-content border-0 shadow-lg rounded-4">
+
+
+                <!-- HEADER -->
+
+                <div
+                    class="modal-header border-0 pb-0 pt-4 px-4">
+
+                    <h5
+                        class="modal-title fw-bold text-dark">
+
+                        <i
+                            class="bi bi-person-plus me-2 text-primary">
+                        </i>
+
+                        Nuevo Usuario
+
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">
+                    </button>
+
                 </div>
+
+
+                <!-- BODY -->
+
                 <div class="modal-body p-4">
-                    <form th:action="@{/admin/usuarios/crear}" method="post" id="formCrearUsuario" novalidate>
+
+                    <form
+                        th:action="@{/admin/usuarios/crear}"
+                        method="post"
+                        id="formCrearUsuario"
+                        novalidate>
+
+
+                        <!-- NOMBRE -->
+
                         <div class="mb-3">
-                            <label class="form-label fw-semibold small text-secondary">Nombre Completo</label>
-                            <input type="text" name="nombre" id="modalNombre" class="form-control" placeholder="Ej: Pedro Infante" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" minlength="3" required>
-                            <div class="invalid-feedback">El nombre solo debe contener letras y espacios (mínimo 3).</div>
+
+                            <label
+                                class="form-label fw-semibold small text-secondary">
+
+                                Nombre Completo
+
+                            </label>
+
+                            <input
+                                type="text"
+                                name="nombre"
+                                id="modalNombre"
+                                class="form-control"
+                                placeholder="Ej: Pedro Infante"
+                                pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+"
+                                minlength="3"
+                                required>
+
+                            <div
+                                class="invalid-feedback">
+
+                                El nombre solo debe contener
+                                letras y espacios (mínimo 3).
+
+                            </div>
+
                         </div>
+
+
+                        <!-- DOCUMENTO Y TELÉFONO -->
+
                         <div class="row">
+
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold small text-secondary">Documento</label>
-                                <input type="text" name="documento" id="modalDocumento" class="form-control" placeholder="Solo números" pattern="[0-9]+" minlength="6" maxlength="15" required>
-                                <div class="invalid-feedback">Entre 6 y 15 dígitos.</div>
+
+                                <label
+                                    class="form-label fw-semibold small text-secondary">
+
+                                    Documento
+
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="documento"
+                                    id="modalDocumento"
+                                    class="form-control"
+                                    placeholder="Solo números"
+                                    pattern="[0-9]+"
+                                    minlength="6"
+                                    maxlength="15"
+                                    required>
+
+                                <div
+                                    class="invalid-feedback">
+
+                                    Entre 6 y 15 dígitos.
+
+                                </div>
+
                             </div>
+
+
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold small text-secondary">Teléfono</label>
-                                <input type="text" name="telefono" id="modalTelefono" class="form-control" placeholder="Entre 7 y 15 dígitos (puede incluir el indicativo del país)." pattern="[0-9]+" minlength="7" maxlength="15" required>
-                                <div class="invalid-feedback">Entre 7 y 15 dígitos.</div>
+
+                                <label
+                                    class="form-label fw-semibold small text-secondary">
+
+                                    Teléfono
+
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="telefono"
+                                    id="modalTelefono"
+                                    class="form-control"
+                                    placeholder="Entre 7 y 15 dígitos (puede incluir el indicativo del país)."
+                                    pattern="[0-9]+"
+                                    minlength="7"
+                                    maxlength="15"
+                                    required>
+
+                                <div
+                                    class="invalid-feedback">
+
+                                    Entre 7 y 15 dígitos.
+
+                                </div>
+
                             </div>
+
                         </div>
+
+
+                        <!-- CORREO -->
+
                         <div class="mb-3">
-                            <label class="form-label fw-semibold small text-secondary">Correo Electrónico</label>
-                            <input type="email" name="correo" id="modalCorreo" class="form-control" placeholder="correo@ejemplo.com" required>
-                            <div class="invalid-feedback">Ingrese un correo válido.</div>
+
+                            <label
+                                class="form-label fw-semibold small text-secondary">
+
+                                Correo Electrónico
+
+                            </label>
+
+                            <input
+                                type="email"
+                                name="correo"
+                                id="modalCorreo"
+                                class="form-control"
+                                placeholder="correo@ejemplo.com"
+                                required>
+
+                            <div
+                                class="invalid-feedback">
+
+                                Ingrese un correo válido.
+
+                            </div>
+
                         </div>
+
+
+                        <!-- DIRECCIÓN -->
+
                         <div class="mb-3">
-                            <label class="form-label fw-semibold small text-secondary">Dirección</label>
-                            <input type="text" name="direccion" id="modalDireccion" class="form-control" placeholder="Calle / Carrera" minlength="5" required>
-                            <div class="invalid-feedback">Mínimo 5 caracteres.</div>
+
+                            <label
+                                class="form-label fw-semibold small text-secondary">
+
+                                Dirección
+
+                            </label>
+
+                            <input
+                                type="text"
+                                name="direccion"
+                                id="modalDireccion"
+                                class="form-control"
+                                placeholder="Calle / Carrera"
+                                minlength="5"
+                                required>
+
+                            <div
+                                class="invalid-feedback">
+
+                                Mínimo 5 caracteres.
+
+                            </div>
+
                         </div>
+
+
+                        <!-- CONTRASEÑA -->
+
                         <div class="mb-3">
-                            <label class="form-label fw-semibold small text-secondary">Contraseña</label>
-                            <input type="password" name="password" id="modalPassword" class="form-control" placeholder="••••••••" minlength="6" required>
-                            <div class="invalid-feedback">Mínimo 6 caracteres.</div>
+
+                            <label
+                                class="form-label fw-semibold small text-secondary">
+
+                                Contraseña
+
+                            </label>
+
+                            <input
+                                type="password"
+                                name="password"
+                                id="modalPassword"
+                                class="form-control"
+                                placeholder="••••••••"
+                                minlength="6"
+                                required>
+
+                            <div
+                                class="invalid-feedback">
+
+                                Mínimo 6 caracteres.
+
+                            </div>
+
                         </div>
+
+
+                        <!-- ROL -->
+
                         <div class="mb-4">
-                            <label class="form-label fw-semibold small text-secondary">Rol asignado</label>
-                            <select name="rol" id="modalRol" class="form-select" required>
-                                <option value="" disabled selected>Seleccione un rol</option>
-                                <option value="2">Cliente</option>
-                                <option value="3">Vendedor</option>
-                                <option value="4">Bodeguero</option>
-                                <option value="1">Administrador</option>
+
+                            <label
+                                class="form-label fw-semibold small text-secondary">
+
+                                Rol asignado
+
+                            </label>
+
+                            <select
+                                name="rol"
+                                id="modalRol"
+                                class="form-select"
+                                required>
+
+                                <option
+                                    value=""
+                                    disabled
+                                    selected>
+
+                                    Seleccione un rol
+
+                                </option>
+
+                                <option value="2">
+                                    Cliente
+                                </option>
+
+                                <option value="3">
+                                    Vendedor
+                                </option>
+
+                                <option value="4">
+                                    Bodeguero
+                                </option>
+
+                                <option value="1">
+                                    Administrador
+                                </option>
+
                             </select>
-                            <div class="invalid-feedback">Seleccione un rol.</div>
+
+                            <div
+                                class="invalid-feedback">
+
+                                Seleccione un rol.
+
+                            </div>
+
                         </div>
-                        <button type="submit" class="btn btn-admin w-100 fw-semibold py-2">
-                            <i class="bi bi-save me-1"></i> Guardar Usuario
+
+
+                        <!-- GUARDAR -->
+
+                        <button
+                            type="submit"
+                            class="btn btn-admin w-100 fw-semibold py-2">
+
+                            <i
+                                class="bi bi-save me-1">
+                            </i>
+
+                            Guardar Usuario
+
                         </button>
+
                     </form>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
 
-    <!-- Bootstrap 5 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Script de Validaciones para el Formulario de Nuevo Usuario -->
-    <script>
-        document.getElementById('modalDocumento').addEventListener('input', function() {
-            this.value = this.value.replace(/[^0-9]/g, '');
-            validarCampo(this);
-        });
-        document.getElementById('modalTelefono').addEventListener('input', function() {
-            this.value = this.value.replace(/[^0-9]/g, '');
-            validarCampo(this);
-        });
-        document.getElementById('modalNombre').addEventListener('input', function() {
-            this.value = this.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '');
-            validarCampo(this);
-        });
-        document.getElementById('modalCorreo').addEventListener('input', function() {
-            validarCampo(this);
-        });
-        document.getElementById('modalDireccion').addEventListener('input', function() {
-            validarCampo(this);
-        });
-        document.getElementById('modalPassword').addEventListener('input', function() {
-            validarCampo(this);
-        });
-        document.getElementById('modalRol').addEventListener('change', function() {
-            validarCampo(this);
-        });
+    <!-- =========================================================
+         BOOTSTRAP JS
+         ========================================================= -->
 
-        function validarCampo(campo) {
-            if (campo.checkValidity()) {
-                campo.classList.remove('is-invalid');
-                campo.classList.add('is-valid');
-            } else {
-                campo.classList.remove('is-valid');
-                campo.classList.add('is-invalid');
-            }
-        }
-
-        document.getElementById('formCrearUsuario').addEventListener('submit', function(e) {
-            let valido = true;
-            this.querySelectorAll('input, select').forEach(function(campo) {
-                validarCampo(campo);
-                if (!campo.checkValidity()) valido = false;
-            });
-            if (!valido) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-        });
+    <script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js">
     </script>
 
-    <!-- Script de Búsqueda y Filtros de Usuarios -->
+
+    <!-- =========================================================
+         VALIDACIONES DEL FORMULARIO
+         ========================================================= -->
+
     <script>
+
+        document
+            .getElementById('modalDocumento')
+            .addEventListener(
+                'input',
+                function() {
+
+                    this.value =
+                        this.value.replace(
+                            /[^0-9]/g,
+                            ''
+                        );
+
+                    validarCampo(this);
+
+                }
+            );
+
+
+        document
+            .getElementById('modalTelefono')
+            .addEventListener(
+                'input',
+                function() {
+
+                    this.value =
+                        this.value.replace(
+                            /[^0-9]/g,
+                            ''
+                        );
+
+                    validarCampo(this);
+
+                }
+            );
+
+
+        document
+            .getElementById('modalNombre')
+            .addEventListener(
+                'input',
+                function() {
+
+                    this.value =
+                        this.value.replace(
+                            /[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g,
+                            ''
+                        );
+
+                    validarCampo(this);
+
+                }
+            );
+
+
+        document
+            .getElementById('modalCorreo')
+            .addEventListener(
+                'input',
+                function() {
+
+                    validarCampo(this);
+
+                }
+            );
+
+
+        document
+            .getElementById('modalDireccion')
+            .addEventListener(
+                'input',
+                function() {
+
+                    validarCampo(this);
+
+                }
+            );
+
+
+        document
+            .getElementById('modalPassword')
+            .addEventListener(
+                'input',
+                function() {
+
+                    validarCampo(this);
+
+                }
+            );
+
+
+        document
+            .getElementById('modalRol')
+            .addEventListener(
+                'change',
+                function() {
+
+                    validarCampo(this);
+
+                }
+            );
+
+
+        function validarCampo(campo) {
+
+            if (campo.checkValidity()) {
+
+                campo.classList.remove(
+                    'is-invalid'
+                );
+
+                campo.classList.add(
+                    'is-valid'
+                );
+
+            } else {
+
+                campo.classList.remove(
+                    'is-valid'
+                );
+
+                campo.classList.add(
+                    'is-invalid'
+                );
+
+            }
+
+        }
+
+
+        document
+            .getElementById('formCrearUsuario')
+            .addEventListener(
+                'submit',
+                function(e) {
+
+                    let valido = true;
+
+                    this
+                        .querySelectorAll(
+                            'input, select'
+                        )
+                        .forEach(
+                            function(campo) {
+
+                                validarCampo(
+                                    campo
+                                );
+
+                                if (
+                                    !campo.checkValidity()
+                                ) {
+
+                                    valido = false;
+
+                                }
+
+                            }
+                        );
+
+
+                    if (!valido) {
+
+                        e.preventDefault();
+
+                        e.stopPropagation();
+
+                    }
+
+                }
+            );
+
+    </script>
+
+
+    <!-- =========================================================
+         BÚSQUEDA Y FILTROS
+         ========================================================= -->
+
+    <script>
+
         (function () {
-            const inputBusqueda   = document.getElementById('inputBusqueda');
-            const filtroRol       = document.getElementById('filtroRol');
-            const filtroEstado    = document.getElementById('filtroEstado');
-            const btnLimpiar      = document.getElementById('btnLimpiarFiltros');
-            const contador        = document.getElementById('contadorResultados');
-            const filaSinResultados = document.getElementById('filaSinResultados');
-            const filas = Array.from(document.querySelectorAll('#tablaUsuarios tbody tr.fila-usuario'));
+
+            const inputBusqueda =
+                document.getElementById(
+                    'inputBusqueda'
+                );
+
+            const filtroRol =
+                document.getElementById(
+                    'filtroRol'
+                );
+
+            const filtroEstado =
+                document.getElementById(
+                    'filtroEstado'
+                );
+
+            const btnLimpiar =
+                document.getElementById(
+                    'btnLimpiarFiltros'
+                );
+
+            const contador =
+                document.getElementById(
+                    'contadorResultados'
+                );
+
+            const filaSinResultados =
+                document.getElementById(
+                    'filaSinResultados'
+                );
+
+            const filas =
+                Array.from(
+                    document.querySelectorAll(
+                        '#tablaUsuarios tbody tr.fila-usuario'
+                    )
+                );
+
 
             function aplicarFiltros() {
-                const texto = inputBusqueda.value.trim().toLowerCase();
-                const rol = filtroRol.value;
-                const estado = filtroEstado.value;
+
+                const texto =
+                    inputBusqueda.value
+                        .trim()
+                        .toLowerCase();
+
+                const rol =
+                    filtroRol.value;
+
+                const estado =
+                    filtroEstado.value;
 
                 let visibles = 0;
 
-                filas.forEach(function (fila) {
-                    const coincideTexto = texto === '' || (fila.dataset.busqueda || '').includes(texto);
-                    const coincideRol = rol === '' || fila.dataset.rol === rol;
-                    const coincideEstado = estado === '' || fila.dataset.estado === estado;
 
-                    const visible = coincideTexto && coincideRol && coincideEstado;
-                    fila.classList.toggle('fila-oculta', !visible);
-                    if (visible) visibles++;
-                });
+                filas.forEach(
+                    function (fila) {
+
+                        const coincideTexto =
+                            texto === ''
+                            ||
+                            (
+                                fila.dataset.busqueda
+                                || ''
+                            ).includes(texto);
+
+
+                        /*
+                         * IMPORTANTE:
+                         *
+                         * Antes:
+                         *
+                         * fila.dataset.rol === rol
+                         *
+                         * Eso solo funcionaba con UN rol.
+                         *
+                         * Ahora data-rol puede contener:
+                         *
+                         * Admin,Cliente,Vendedor
+                         *
+                         * Por eso convertimos el texto
+                         * en una lista y buscamos si contiene
+                         * el rol seleccionado.
+                         */
+
+                        const rolesUsuario =
+                            (
+                                fila.dataset.rol
+                                || ''
+                            )
+                            .split(',')
+                            .map(
+                                function (nombreRol) {
+
+                                    return nombreRol.trim();
+
+                                }
+                            )
+                            .filter(
+                                Boolean
+                            );
+
+
+                        const coincideRol =
+                            rol === ''
+                            ||
+                            rolesUsuario.includes(
+                                rol
+                            );
+
+
+                        const coincideEstado =
+                            estado === ''
+                            ||
+                            fila.dataset.estado === estado;
+
+
+                        const visible =
+                            coincideTexto
+                            &&
+                            coincideRol
+                            &&
+                            coincideEstado;
+
+
+                        fila.classList.toggle(
+                            'fila-oculta',
+                            !visible
+                        );
+
+
+                        if (visible) {
+
+                            visibles++;
+
+                        }
+
+                    }
+                );
+
 
                 if (filaSinResultados) {
-                    filaSinResultados.style.display = (visibles === 0 && filas.length > 0) ? '' : 'none';
+
+                    filaSinResultados.style.display =
+                        (
+                            visibles === 0
+                            &&
+                            filas.length > 0
+                        )
+                        ? ''
+                        : 'none';
+
                 }
+
 
                 if (filas.length > 0) {
-                    contador.textContent = visibles + ' de ' + filas.length + ' usuario(s) mostrados';
+
+                    contador.textContent =
+                        visibles
+                        +
+                        ' de '
+                        +
+                        filas.length
+                        +
+                        ' usuario(s) mostrados';
+
                 } else {
+
                     contador.textContent = '';
+
                 }
+
             }
+
 
             if (filas.length > 0) {
-                inputBusqueda.addEventListener('input', aplicarFiltros);
-                filtroRol.addEventListener('change', aplicarFiltros);
-                filtroEstado.addEventListener('change', aplicarFiltros);
-                btnLimpiar.addEventListener('click', function () {
-                    inputBusqueda.value = '';
-                    filtroRol.value = '';
-                    filtroEstado.value = '';
-                    aplicarFiltros();
-                });
+
+                inputBusqueda.addEventListener(
+                    'input',
+                    aplicarFiltros
+                );
+
+
+                filtroRol.addEventListener(
+                    'change',
+                    aplicarFiltros
+                );
+
+
+                filtroEstado.addEventListener(
+                    'change',
+                    aplicarFiltros
+                );
+
+
+                btnLimpiar.addEventListener(
+                    'click',
+                    function () {
+
+                        inputBusqueda.value = '';
+
+                        filtroRol.value = '';
+
+                        filtroEstado.value = '';
+
+                        aplicarFiltros();
+
+                    }
+                );
+
 
                 aplicarFiltros();
+
             }
+
         })();
+
     </script>
+
 </body>
+
 </html>

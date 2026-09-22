@@ -28,14 +28,16 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
     private UsuarioRolRepository usuarioRolRepository;
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        Authentication authentication)
+    public void onAuthenticationSuccess(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Authentication authentication)
             throws IOException, ServletException {
 
         String correo = authentication.getName();
 
-        Usuario usuario = usuarioRepository.findByCorreo(correo);
+        Usuario usuario =
+                usuarioRepository.findByCorreo(correo);
 
         if (usuario == null) {
             response.sendRedirect("/login?error");
@@ -44,77 +46,94 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
 
         HttpSession session = request.getSession();
 
-        // Guardar el usuario en sesión
+        // Guardamos el usuario actualmente conectado
         session.setAttribute("usuarioLogueado", usuario);
 
-        /*
-         * Obtener todos los roles asignados al usuario
-         * desde la tabla usuario_rol.
-         */
+        // Obtenemos todos los roles del usuario
         List<UsuarioRol> rolesUsuario =
                 usuarioRolRepository.findByIdUsuario(usuario.getId());
 
+        // Guardamos los roles disponibles en la sesión
+        // para poder mostrar el botón "Cambiar rol"
+        session.setAttribute("rolesDisponibles", rolesUsuario);
+
         /*
-         * Si tiene más de un rol, debe seleccionar
-         * cuál quiere utilizar en esta sesión.
+         * Si tiene más de un rol,
+         * primero debe seleccionar cuál quiere utilizar.
          */
         if (rolesUsuario.size() > 1) {
+
             response.sendRedirect("/seleccionar-rol");
             return;
         }
 
         /*
-         * Si solamente tiene un rol en usuario_rol,
-         * guardamos ese rol como rol activo.
+         * Si tiene exactamente un rol,
+         * lo establecemos como rol activo.
          */
         if (rolesUsuario.size() == 1) {
 
-            Integer idRol = rolesUsuario.get(0).getIdRol();
+            Integer idRol =
+                    rolesUsuario.get(0).getIdRol();
 
-            String rolActivo = obtenerNombreRol(idRol);
+            String rolActivo =
+                    obtenerNombreRol(idRol);
 
             if (rolActivo != null) {
-                session.setAttribute("rolActivo", rolActivo);
+                session.setAttribute(
+                        "rolActivo",
+                        rolActivo
+                );
             }
         }
 
         /*
-         * Si todavía no tiene registros en usuario_rol,
-         * utilizamos temporalmente el rol antiguo
-         * almacenado en usuario.id_rol_fk.
+         * Compatibilidad con usuarios que todavía
+         * solamente tienen el rol en id_rol_fk.
          */
         if (rolesUsuario.isEmpty()) {
 
-            String rolActivo = obtenerNombreRol(usuario.getIdRol());
+            String rolActivo =
+                    obtenerNombreRol(usuario.getIdRol());
 
             if (rolActivo != null) {
-                session.setAttribute("rolActivo", rolActivo);
+
+                session.setAttribute(
+                        "rolActivo",
+                        rolActivo
+                );
             }
         }
 
         /*
-         * Redirección inicial.
-         *
-         * Spring Security ya cargó las autoridades del usuario
-         * mediante UsuarioService.
+         * Redirección inicial según los roles
+         * que tiene el usuario.
          */
         if (authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+                .anyMatch(a ->
+                        a.getAuthority()
+                                .equals("ROLE_ADMIN"))) {
 
             response.sendRedirect("/admin/panel");
 
         } else if (authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_VENDEDOR"))) {
+                .anyMatch(a ->
+                        a.getAuthority()
+                                .equals("ROLE_VENDEDOR"))) {
 
             response.sendRedirect("/vendedor/panel");
 
         } else if (authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_CLIENTE"))) {
+                .anyMatch(a ->
+                        a.getAuthority()
+                                .equals("ROLE_CLIENTE"))) {
 
             response.sendRedirect("/cliente/panel");
 
         } else if (authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_BODEGUERO"))) {
+                .anyMatch(a ->
+                        a.getAuthority()
+                                .equals("ROLE_BODEGUERO"))) {
 
             response.sendRedirect("/bodeguero/panel");
 
@@ -124,10 +143,6 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
         }
     }
 
-    /**
-     * Convierte el ID del rol de la base de datos
-     * al nombre utilizado por Spring Security.
-     */
     private String obtenerNombreRol(Integer idRol) {
 
         if (idRol == null) {

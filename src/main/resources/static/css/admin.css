@@ -651,5 +651,5 @@ body {
 /* ===== COLORES DE ROLES ===== */
 .badge.rol-admin     { background-color: rgba(3, 6, 211, 0.781); color: #f3f3f5; }
 .badge.rol-cliente   { background-color:#FF4500; color: #f3f3f5; }
-.badge.rol-vendedor  { background-color: #198754; color: #fff; }
-.badge.rol-bodeguero { background-color: #ffc107; color: #000; }
+.badge.rol-vendedor  { background-color: #198754; color: #f3f3f5; }
+.badge.rol-bodeguero { background-color: #7f1d1d; color: #f3f3f5; }
