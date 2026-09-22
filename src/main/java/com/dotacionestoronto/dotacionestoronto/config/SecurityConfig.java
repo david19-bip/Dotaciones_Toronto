@@ -1,12 +1,9 @@
 package com.dotacionestoronto.dotacionestoronto.config;
 
-import com.dotacionestoronto.dotacionestoronto.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -15,12 +12,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
+import com.dotacionestoronto.dotacionestoronto.service.UsuarioService;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Autowired
     private UsuarioService usuarioService;
+
+    @Autowired
+    private CustomSuccessHandler customSuccessHandler;
 
     // ==========================================
     // PASSWORD ENCODER
@@ -41,26 +43,61 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(auth -> auth
 
-                // Rutas públicas
-                .requestMatchers("/", "/login", "/registro", "/css/**", "/js/**", "/images/**").permitAll()
+                // ==========================================
+                // RUTAS PÚBLICAS
+                // ==========================================
 
-                // Rutas del administrador
+                .requestMatchers(
+                    "/",
+                    "/login",
+                    "/registro",
+                    "/css/**",
+                    "/js/**",
+                    "/images/**"
+                ).permitAll()
+
+                // ==========================================
+                // SELECTOR DE ROLES
+                // ==========================================
+
+                .requestMatchers("/seleccionar-rol")
+                .authenticated()
+
+                .requestMatchers("/cambiar-rol")
+                .authenticated()
+
+                // ==========================================
+                // ADMINISTRADOR
+                // ==========================================
+
                 .requestMatchers("/admin/**")
                 .hasAuthority("ROLE_ADMIN")
 
-                // Rutas del vendedor
+                // ==========================================
+                // VENDEDOR
+                // ==========================================
+
                 .requestMatchers("/vendedor/**")
                 .hasAuthority("ROLE_VENDEDOR")
 
-                // Rutas del cliente
+                // ==========================================
+                // CLIENTE
+                // ==========================================
+
                 .requestMatchers("/cliente/**")
                 .hasAuthority("ROLE_CLIENTE")
 
-                // Rutas del bodeguero
+                // ==========================================
+                // BODEGUERO
+                // ==========================================
+
                 .requestMatchers("/bodeguero/**")
                 .hasAuthority("ROLE_BODEGUERO")
 
-                // Cualquier otra ruta requiere autenticación
+                // ==========================================
+                // CUALQUIER OTRA RUTA
+                // ==========================================
+
                 .anyRequest()
                 .authenticated()
             )
@@ -69,37 +106,67 @@ public class SecurityConfig {
             // LOGIN
             // ==========================================
 
-.formLogin(form -> form
-    .loginPage("/login")
-    .loginProcessingUrl("/login")
-    .successHandler(new CustomSuccessHandler())
-.failureHandler((request, response, exception) -> {
-    String mensaje = exception.getMessage() != null ? exception.getMessage() : "";
-    Throwable causa = exception.getCause();
-    String mensajeCausa = causa != null && causa.getMessage() != null ? causa.getMessage() : "";
-    
-    if (mensaje.contains("inhabilitado") || mensajeCausa.contains("inhabilitado")
-        || exception.getClass().getSimpleName().contains("Disabled")
-        || (causa != null && causa.getClass().getSimpleName().contains("Disabled"))) {
-        response.sendRedirect("/login?inhabilitado");
-    } else {
-        response.sendRedirect("/login?error");
-            }
-        })
-    
-    .permitAll()
-)
+            .formLogin(form -> form
+
+                .loginPage("/login")
+
+                .loginProcessingUrl("/login")
+
+                .successHandler(customSuccessHandler)
+
+                .failureHandler((request, response, exception) -> {
+
+                    String mensaje =
+                        exception.getMessage() != null
+                            ? exception.getMessage()
+                            : "";
+
+                    Throwable causa = exception.getCause();
+
+                    String mensajeCausa =
+                        causa != null && causa.getMessage() != null
+                            ? causa.getMessage()
+                            : "";
+
+                    if (
+                        mensaje.contains("inhabilitado")
+                        || mensajeCausa.contains("inhabilitado")
+                        || exception.getClass()
+                            .getSimpleName()
+                            .contains("Disabled")
+                        || (
+                            causa != null
+                            && causa.getClass()
+                                .getSimpleName()
+                                .contains("Disabled")
+                        )
+                    ) {
+
+                        response.sendRedirect("/login?inhabilitado");
+
+                    } else {
+
+                        response.sendRedirect("/login?error");
+                    }
+                })
+
+                .permitAll()
+            )
 
             // ==========================================
             // LOGOUT
             // ==========================================
 
             .logout(logout -> logout
+
                 .logoutUrl("/logout")
+
                 .logoutSuccessUrl("/login?logout")
+
                 .logoutRequestMatcher(
                     new AntPathRequestMatcher("/logout")
                 )
+
                 .permitAll()
             );
 
@@ -115,9 +182,9 @@ public class SecurityConfig {
             HttpSecurity http) throws Exception {
 
         AuthenticationManagerBuilder builder =
-                http.getSharedObject(
-                        AuthenticationManagerBuilder.class
-                );
+            http.getSharedObject(
+                AuthenticationManagerBuilder.class
+            );
 
         builder
             .userDetailsService(usuarioService)

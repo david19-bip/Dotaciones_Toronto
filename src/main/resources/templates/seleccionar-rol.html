@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Seleccionar rol - Dotaciones Toronto</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <link rel="stylesheet" th:href="@{/css/login.css}">
+</head>
+
+<body>
+
+    <div class="container d-flex justify-content-center align-items-center min-vh-100">
+
+        <div class="card shadow p-4" style="width: 100%; max-width: 500px;">
+
+            <div class="text-center mb-4">
+
+                <img
+                    th:src="@{/images/logo blanco.png}"
+                    alt="Dotaciones Toronto"
+                    style="max-width: 180px;"
+                    class="mb-3">
+
+                <h3 class="fw-bold">
+                    Selecciona tu rol
+                </h3>
+
+                <p class="text-muted">
+                    Tienes más de un rol asignado.
+                    Selecciona con cuál deseas ingresar.
+                </p>
+
+            </div>
+
+            <form th:action="@{/seleccionar-rol}" method="post">
+
+                <div
+                    th:each="rol : ${roles}"
+                    class="mb-3">
+
+                    <button
+                        type="submit"
+                        name="idRol"
+                        th:value="${rol.idRol}"
+                        class="btn btn-outline-primary w-100 py-3">
+
+                        <i class="bi bi-person-badge me-2"></i>
+
+                        <span
+                            th:switch="${rol.idRol}">
+
+                            <span th:case="1">
+                                Administrador
+                            </span>
+
+                            <span th:case="2">
+                                Cliente
+                            </span>
+
+                            <span th:case="3">
+                                Vendedor
+                            </span>
+
+                            <span th:case="4">
+                                Bodeguero
+                            </span>
+
+                            <span th:case="*">
+                                Rol desconocido
+                            </span>
+
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </form>
+
+            <div class="text-center mt-3">
+
+                <form th:action="@{/logout}" method="post">
+
+                    <button
+                        type="submit"
+                        class="btn btn-link text-danger text-decoration-none">
+
+                        <i class="bi bi-box-arrow-left me-1"></i>
+                        Cerrar sesión
+
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
