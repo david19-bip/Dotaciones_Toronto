@@ -83,15 +83,40 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label fw-semibold small text-secondary">Rol asignado</label>
-                        <select name="rol" id="editRol" class="form-select" required>
-                            <option value="2" th:selected="*{idRol == 2}">Cliente</option>
-                            <option value="3" th:selected="*{idRol == 3}">Vendedor</option>
-                            <option value="4" th:selected="*{idRol == 4}">Bodeguero</option>
-                            <option value="1" th:selected="*{idRol == 1}">Administrador</option>
-                        </select>
-                        <div class="invalid-feedback">Seleccione un rol.</div>
-                    </div>
+
+    <label class="form-label fw-semibold small text-secondary">
+        Roles asignados
+    </label>
+
+    <div class="border rounded-3 p-3">
+
+        <div
+            class="form-check mb-2"
+            th:each="rol : ${rolesDisponibles}">
+
+            <input
+                class="form-check-input"
+                type="checkbox"
+                name="roles"
+                th:id="'rol_' + ${rol.key}"
+                th:value="${rol.key}"
+                th:checked="${rolesAsignados.contains(rol.key)}">
+
+            <label
+                class="form-check-label"
+                th:for="'rol_' + ${rol.key}"
+                th:text="${rol.value}">
+            </label>
+
+        </div>
+
+    </div>
+
+    <div class="form-text">
+        Un usuario puede tener varios roles.
+    </div>
+
+</div>
 
                     <div class="d-flex justify-content-end gap-2">
                         <a href="/admin/usuarios" class="btn btn-light px-4 py-2 fw-semibold">Cancelar</a>
@@ -117,9 +142,6 @@
             validarCampo(this);
         });
         document.getElementById('editDireccion').addEventListener('input', function() {
-            validarCampo(this);
-        });
-        document.getElementById('editRol').addEventListener('change', function() {
             validarCampo(this);
         });
 

@@ -24,6 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -66,6 +67,9 @@ public class AdminController {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private UsuarioRolRepository usuarioRolRepository;
 
     @Autowired
     private PedidoRepository pedidoRepository;
@@ -215,33 +219,104 @@ public class AdminController {
 
     @GetMapping("/usuarios/editar")
     public String editarUsuarioForm(@RequestParam Long id, Model model) {
+
         Usuario usuario = usuarioRepository.findById(id).orElse(null);
+
         if (usuario == null) {
             return "redirect:/admin/usuarios";
         }
+
+        // Obtener los roles que actualmente tiene el usuario
+        List<UsuarioRol> rolesUsuario =
+                usuarioRolRepository.findByIdUsuario(usuario.getId());
+
+        List<Integer> rolesAsignados = rolesUsuario.stream()
+                .map(UsuarioRol::getIdRol)
+                .toList();
+
+        // Roles disponibles en el sistema
+        Map<Integer, String> rolesDisponibles = new LinkedHashMap<>();
+
+        rolesDisponibles.put(1, "Administrador");
+        rolesDisponibles.put(2, "Cliente");
+        rolesDisponibles.put(3, "Vendedor");
+        rolesDisponibles.put(4, "Bodeguero");
+
         model.addAttribute("usuario", usuario);
+        model.addAttribute("rolesAsignados", rolesAsignados);
+        model.addAttribute("rolesDisponibles", rolesDisponibles);
         model.addAttribute("nombre", getUsuarioActual().getNombre());
+
         return "admin/editar_usuario_admin";
     }
 
+    @Transactional
     @PostMapping("/usuarios/actualizar")
     public String actualizarUsuarioAdmin(
             @RequestParam Long idUsuario,
             @RequestParam String correo,
             @RequestParam String telefono,
             @RequestParam String direccion,
-            @RequestParam Integer rol,
+            @RequestParam(name = "roles", required = false) List<Integer> roles,
             Model model) {
 
         Usuario usuario = usuarioRepository.findById(idUsuario).orElse(null);
-        if (usuario != null) {
-            usuario.setCorreo(correo);
-            usuario.setTelefono(telefono);
-            usuario.setDireccion(direccion);
-            usuario.setIdRol(rol);
 
-            usuarioRepository.save(usuario);
+        if (usuario == null) {
+            return "redirect:/admin/usuarios";
         }
+
+        // Debe tener al menos un rol
+        if (roles == null || roles.isEmpty()) {
+            return "redirect:/admin/usuarios/editar?id="
+                    + idUsuario
+                    + "&error=rol";
+        }
+
+        /*
+        * Si el administrador está editando su propia cuenta,
+        * no permitimos que se quite el rol Administrador.
+        */
+        Usuario administradorActual = getUsuarioActual();
+
+        if (administradorActual != null
+                && administradorActual.getId().equals(idUsuario)
+                && !roles.contains(1)) {
+
+            return "redirect:/admin/usuarios/editar?id="
+                    + idUsuario
+                    + "&error=admin";
+        }
+
+        // Actualizar información básica
+        usuario.setCorreo(correo);
+        usuario.setTelefono(telefono);
+        usuario.setDireccion(direccion);
+
+        /*
+         * Mantenemos id_rol_fk por compatibilidad con el sistema anterior.
+        *
+        * El primer rol seleccionado será el rol principal/legacy.
+        * Los múltiples roles reales estarán en usuario_rol.
+        */
+        usuario.setIdRol(roles.get(0));
+
+        usuarioRepository.save(usuario);
+
+        /*
+        * Eliminamos las relaciones actuales del usuario
+        * y las reconstruimos con los roles seleccionados.
+        */
+        usuarioRolRepository.deleteByIdUsuario(idUsuario);
+
+        for (Integer idRol : roles) {
+
+            UsuarioRol usuarioRol =
+                    new UsuarioRol(idUsuario, idRol);
+
+            usuarioRolRepository.save(usuarioRol);
+        }
+
         return "redirect:/admin/usuarios";
     }
 
