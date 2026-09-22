@@ -42,6 +42,7 @@ import com.dotacionestoronto.dotacionestoronto.entity.MovimientoInventario;
 import com.dotacionestoronto.dotacionestoronto.entity.Pedido;
 import com.dotacionestoronto.dotacionestoronto.entity.Producto;
 import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
+import com.dotacionestoronto.dotacionestoronto.entity.UsuarioRol;
 import com.dotacionestoronto.dotacionestoronto.entity.Venta;
 import com.dotacionestoronto.dotacionestoronto.repository.DetallePedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.DetalleVentaRepository;
