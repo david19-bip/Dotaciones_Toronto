@@ -1,5 +1,5 @@
 /* =====================================================
-   TEMA ROJO VINO ELEGANTE Y MODERNO - BODEGUERO
+   TEMA ROJO VINO ELEGANTE - BODEGUERO
    ===================================================== */
 
 /* ===== FONDO GENERAL ===== */
@@ -19,21 +19,21 @@ body {
 }
 
 .sidebar-brand {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
   text-align: center;
   padding: 15px 0 25px 0;
   margin-bottom: 16px;
 }
 
-/* ===== LOGO BLANCO BRILLANTE ===== */
+/* ===== LOGO EN BLANCO ===== */
 .brand-logo, 
 .sidebar-brand img {
-    width: 90px;
-    height: auto;
+    width: 160px !important;
+    height: auto !important;
     object-fit: contain;
-    display: block;
-    margin: 0 auto 12px;
-    filter: brightness(0) invert(1); /* Pasa el logo a blanco totalmente legible */
+    display: block !important;
+    margin: 0 auto 12px !important;
+    filter: brightness(0) invert(1) !important;
     transition: transform 0.3s ease;
 }
 
@@ -42,33 +42,57 @@ body {
     transform: scale(1.05);
 }
 
-/* ===== TÍTULOS Y ROL ===== */
-.sidebar-brand .badge,
-.sidebar-brand span,
-.sidebar-brand p {
-    color: #4cff05 !important; /* Rojo claro / Coral suave para 'BODEGUERO' */
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-}
-
+/* ===== TÍTULO DE LA EMPRESA (FORZADO A BLANCO PURO) ===== */
 .brand-title,
-.sidebar-brand div,
-.sidebar-brand h1, 
-.sidebar-brand h2, 
-.sidebar-brand h3 {
-    color: #fafafa !important; /* Blanco puro para 'Dotaciones Toronto' */
+.sidebar-brand .brand-title,
+.sidebar-brand h1,
+.sidebar-brand h2,
+.sidebar-brand h3,
+.sidebar-brand h4 {
+    background: none !important;
+    color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
-    font-weight: 800;
-    font-size: 1.1rem;
+    font-weight: 800 !important;
+    font-size: 1.1rem !important;
     letter-spacing: 0.5px;
     margin-top: 4px;
+    padding-bottom: 20px;
+}
+
+/* Limpieza estricta de emojis en el título */
+.brand-title::before,
+.sidebar-brand .brand-title::before,
+.sidebar-brand h1::before,
+.sidebar-brand h2::before,
+.sidebar-brand h3::before,
+.sidebar-brand h4::before {
+    content: none !important;
+}
+
+/* ===== ROL BODEGUERO (COLOR Y CAJA ÚNICAMENTE AQUÍ) ===== */
+.sidebar-brand .badge,
+.sidebar-brand small,
+.sidebar-role {
+    color: #fed7aa !important;
+    -webkit-text-fill-color: #fed7aa !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    margin-top: 6px;
+}
+
+/* Inserción del emoji únicamente al lado de Bodeguero */
+.sidebar-brand .badge::before,
+.sidebar-brand small::before,
+.sidebar-role::before {
+    content: "\1F4E6  " !important; /* Emoji de caja 📦 */
+    font-size: 0.95rem !important;
 }
 
 /* ===== MENÚ Y ENLACES DEL SIDEBAR ===== */
 .sidebar a {
-  color: #fecdd3 !important; /* Rosa/Blanco suave de alto contraste */
+  color: #fecdd3 !important;
   font-weight: 500;
   font-size: 0.95rem;
   padding: 12px 20px;
@@ -105,8 +129,8 @@ body {
 .btn-primary {
   background-color: #ffffff !important;
   border-color: #ffffff !important;
-  color: #991b1b !important; /* Texto rojo oscuro para el botón blanco */
-  font-weight: 700;
+  color: #991b1b !important;
+  font-weight: 700 !important;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
@@ -122,4 +146,21 @@ body {
 .form-select:focus {
   border-color: #ef4444;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+}
+
+/* Forzar anulación del verde (text-success) e inline styles */
+.sidebar-brand .text-success,
+.sidebar-brand div:first-of-type {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Forzar anulación del color de Bodeguero e insertar la caja */
+.sidebar-brand div:last-of-type {
+    color: #fde047 !important;
+}
+
+.sidebar-brand div:last-of-type::before {
+    content: "📦 " !important;
+    font-size: 0.95rem;
 }
