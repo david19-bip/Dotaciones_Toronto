@@ -52,6 +52,7 @@ import com.dotacionestoronto.dotacionestoronto.repository.MovimientoInventarioRe
 import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRolRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.VentaRepository;
 import com.dotacionestoronto.dotacionestoronto.service.ReporteProductosExcelService;
 import com.dotacionestoronto.dotacionestoronto.service.ReporteProductosService;
