@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facturación DIAN - Dotaciones Toronto</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link th:href="@{/css/admin.css}" rel="stylesheet">
+    <style>
+        .fact-card { background: #fff; border-radius: 16px; border: 1px solid #e7eaf3; padding: 18px 20px; }
+        .fact-card .valor { font-size: 1.7rem; font-weight: 800; color: #16213e; }
+        .fact-card .titulo { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: #7a869a; font-weight: 700; }
+        .chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px;
+                background: #fff; border: 1px solid #e7eaf3; color: #475467; font-size: .85rem;
+                text-decoration: none; font-weight: 600; }
+        .chip:hover { border-color: #e2b96f; color: #16213e; }
+        .chip.activo { background: #16213e; border-color: #16213e; color: #fff; }
+        .badge-estado { padding: 6px 12px; border-radius: 999px; font-size: .75rem; font-weight: 700; }
+        .est-ACEPTADA { background: #e7f7ee; color: #15803d; }
+        .est-ENVIADA  { background: #eef2ff; color: #3730a3; }
+        .est-RECHAZADA{ background: #fdeaea; color: #b91c1c; }
+        .est-ERROR    { background: #fff4e5; color: #b45309; }
+        .est-BORRADOR, .est-GENERADA { background: #eef1f6; color: #475467; }
+        .cufe-mini { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem; color: #7a869a; }
+        .modo-pill { padding: 6px 12px; border-radius: 999px; font-size: .75rem; font-weight: 700; }
+        .modo-SIMULADO { background: #fff7e6; color: #b45309; }
+        .modo-DIAN { background: #e7f7ee; color: #15803d; }
+        .modo-PROVEEDOR { background: #eef2ff; color: #3730a3; }
+        .btn-accion { border-radius: 9px; font-size: .8rem; }
+        .tabla-fact th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: #7a869a; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <img th:src="@{/images/logo blanco.png}" alt="Logo Dotaciones Toronto"
+             style="width: 140px; height: auto; object-fit: contain; display: block; margin: 0 auto 8px;">
+        <div style="color: #ffffff; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.5px; text-align: center;">
+            Dotaciones Toronto
+        </div>
+        <span class="role-badge"><i class="bi bi-shield-lock-fill me-1"></i> Administrador</span>
+    </div>
+
+    <a href="/admin/panel"><i class="bi bi-speedometer2"></i> Inicio</a>
+    <a href="/admin/perfil"><i class="bi bi-person-circle"></i> Perfil</a>
+    <a href="/admin/usuarios"><i class="bi bi-people"></i> Usuarios</a>
+    <a href="/admin/productos"><i class="bi bi-box-seam"></i> Productos</a>
+    <a href="/admin/inventario"><i class="bi bi-archive"></i> Inventario</a>
+    <a href="/admin/pedidos"><i class="bi bi-bag-check"></i> Pedidos</a>
+    <a href="/admin/ventas"><i class="bi bi-cash-coin"></i> Ventas</a>
+    <a href="/admin/facturacion" class="active"><i class="bi bi-receipt"></i> Facturación DIAN</a>
+    <a href="/admin/devoluciones"><i class="bi bi-arrow-return-left"></i> Devoluciones</a>
+
+    <div style="padding: 15px 24px; margin-top: auto;">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit"><i class="bi bi-box-arrow-right me-1"></i> Cerrar sesión</button>
+        </form>
+    </div>
+</div>
+
+<div class="main-content">
+
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">Facturación electrónica DIAN</h3>
+            <p class="text-muted mb-0">
+                Bienvenido, <span class="fw-semibold text-dark" th:text="${nombre}">Admin</span>
+                · Las facturas se emiten automáticamente al entregar un pedido
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="modo-pill" th:classappend="'modo-' + ${modo}">
+                <i class="bi bi-broadcast"></i>
+                <span th:text="${modo}">SIMULADO</span>
+                · Ambiente <span th:text="${ambiente == '1' ? 'Producción' : 'Pruebas'}">Pruebas</span>
+            </span>
+            <a class="btn btn-outline-secondary btn-accion" th:href="@{/admin/facturacion/configuracion}">
+                <i class="bi bi-gear"></i> Configuración
+            </a>
+        </div>
+    </div>
+
+    <!-- Mensajes -->
+    <div class="alert alert-success" th:if="${exito}" th:text="${exito}"></div>
+    <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+    <div class="alert alert-warning" th:if="${!habilitada}">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        La emisión automática está deshabilitada (<code>facturacion.habilitada=false</code>).
+    </div>
+
+    <!-- Indicadores -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="fact-card">
+                <div class="titulo">Total facturas</div>
+                <div class="valor" th:text="${conteos['TODAS']}">0</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="fact-card">
+                <div class="titulo">Aceptadas</div>
+                <div class="valor text-success" th:text="${conteos['ACEPTADA']}">0</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="fact-card">
+                <div class="titulo">En proceso / enviadas</div>
+                <div class="valor text-primary" th:text="${conteos['ENVIADA']}">0</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="fact-card">
+                <div class="titulo">Con error</div>
+                <div class="valor text-danger"
+                     th:text="${conteos['ERROR'] + conteos['RECHAZADA']}">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="d-flex gap-2 flex-wrap mb-3">
+        <a class="chip" th:classappend="${filtroEstado == null ? 'activo' : ''}" th:href="@{/admin/facturacion}">
+            Todas (<span th:text="${conteos['TODAS']}">0</span>)
+        </a>
+        <a class="chip" th:classappend="${filtroEstado == 'ACEPTADA' ? 'activo' : ''}"
+           th:href="@{/admin/facturacion(estado='ACEPTADA')}">Aceptadas</a>
+        <a class="chip" th:classappend="${filtroEstado == 'ENVIADA' ? 'activo' : ''}"
+           th:href="@{/admin/facturacion(estado='ENVIADA')}">En proceso</a>
+        <a class="chip" th:classappend="${filtroEstado == 'RECHAZADA' ? 'activo' : ''}"
+           th:href="@{/admin/facturacion(estado='RECHAZADA')}">Rechazadas</a>
+        <a class="chip" th:classappend="${filtroEstado == 'ERROR' ? 'activo' : ''}"
+           th:href="@{/admin/facturacion(estado='ERROR')}">Con error</a>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0 overflow-hidden" style="border-radius: 16px;">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 tabla-fact">
+                    <thead>
+                        <tr>
+                            <th class="p-3 ps-4">Factura</th>
+                            <th class="p-3">Pedido</th>
+                            <th class="p-3">Cliente</th>
+                            <th class="p-3">Fecha</th>
+                            <th class="p-3 text-end">Total</th>
+                            <th class="p-3 text-center">Estado</th>
+                            <th class="p-3">CUFE</th>
+                            <th class="p-3 text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(facturas)}">
+                            <td colspan="8" class="text-center p-5 text-muted">
+                                <i class="bi bi-receipt fs-3 d-block mb-2"></i>
+                                Aún no hay facturas. Se generan automáticamente cuando el vendedor
+                                marca un pedido como <strong>Entregado</strong>.
+                            </td>
+                        </tr>
+                        <tr th:each="f : ${facturas}">
+                            <td class="p-3 ps-4">
+                                <a class="fw-bold text-decoration-none"
+                                   th:href="@{'/admin/facturacion/' + ${f.id}}"
+                                   th:text="${f.numeroFactura}">DT00001</a>
+                                <div class="text-muted" style="font-size:.72rem"
+                                     th:if="${f.simulado}">simulación</div>
+                            </td>
+                            <td class="p-3 text-muted" th:text="${f.idPedido != null ? '#' + f.idPedido : '-'}">#1</td>
+                            <td class="p-3">
+                                <div class="fw-semibold" th:text="${f.razonSocialAdquirente}">Cliente</div>
+                                <div class="text-muted" style="font-size:.75rem"
+                                     th:text="${f.tipoDocAdquirente + ' ' + f.nitAdquirente}">CC 123</div>
+                            </td>
+                            <td class="p-3 text-muted"
+                                th:text="${f.fechaEmision != null ? #temporals.format(f.fechaEmision,'dd/MM/yyyy HH:mm') : '-'}">
+                                23/10/2026 10:00
+                            </td>
+                            <td class="p-3 text-end fw-bold text-success"
+                                th:text="'$ ' + ${#numbers.formatDecimal(f.totalFactura, 0, 'POINT', 2, 'COMMA')}">$ 0</td>
+                            <td class="p-3 text-center">
+                                <span class="badge-estado" th:classappend="'est-' + ${f.estado}"
+                                      th:text="${f.estado}">ACEPTADA</span>
+                            </td>
+                            <td class="p-3">
+                                <span class="cufe-mini"
+                                      th:text="${f.cufe != null ? #strings.substring(f.cufe, 0, 16) + '…' : '-'}">xxxx</span>
+                            </td>
+                            <td class="p-3 text-end pe-4">
+                                <div class="d-flex gap-1 justify-content-end">
+                                    <a class="btn btn-sm btn-outline-primary btn-accion"
+                                       th:href="@{'/admin/facturacion/' + ${f.id}}" title="Ver detalle">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a class="btn btn-sm btn-outline-danger btn-accion"
+                                       th:href="@{'/admin/facturacion/' + ${f.id} + '/pdf'}" target="_blank" title="PDF">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                    </a>
+                                    <a class="btn btn-sm btn-outline-success btn-accion"
+                                       th:href="@{'/admin/facturacion/' + ${f.id} + '/xml'}" title="XML">
+                                        <i class="bi bi-file-earmark-code"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <p class="text-muted mt-3" style="font-size:.82rem">
+        <i class="bi bi-info-circle me-1"></i>
+        El XML UBL 2.1 es el documento con validez fiscal. El PDF es la representación gráfica con el código QR de verificación.
+    </p>
+</div>
+
+</body>
+</html>

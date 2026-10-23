@@ -36,6 +36,7 @@ import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.VentaRepository;
 import com.dotacionestoronto.dotacionestoronto.service.ReporteVentasExcelService;
+import com.dotacionestoronto.dotacionestoronto.facturacion.service.FacturacionService;
 
 @Controller
 @RequestMapping("/vendedor")
@@ -64,6 +65,10 @@ public class VendedorController {
 
     @Autowired
     private ReporteVentasExcelService reporteVentasExcelService;
+
+    // Módulo de facturación electrónica (DIAN)
+    @Autowired
+    private FacturacionService facturacionService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -196,8 +201,14 @@ public class VendedorController {
             pedido.setEstado(estado);
 
             if ("Entregado".equals(estado)) {
-                generarVentaDesdePedido(pedido);
+                Venta ventaGenerada = generarVentaDesdePedido(pedido);
                 pedido.setOculto(true);
+
+                // Facturación automática: se emite la factura electrónica de venta
+                // (el servicio nunca lanza excepciones, deja la factura en ERROR si falla)
+                if (ventaGenerada != null && ventaGenerada.getId() != null) {
+                    facturacionService.emitirDesdeVenta(ventaGenerada.getId());
+                }
             }
 
             pedidoRepository.save(pedido);
@@ -206,11 +217,11 @@ public class VendedorController {
         return "redirect:/vendedor/pedidos";
     }
 
-    private void generarVentaDesdePedido(Pedido pedido) {
+    private Venta generarVentaDesdePedido(Pedido pedido) {
 
         Venta ventaExistente = ventaRepository.findByIdPedido(pedido.getId());
         if (ventaExistente != null) {
-            return;
+            return ventaExistente;
         }
 
         List<DetallePedido> detallesPedido = detallePedidoRepository.findByIdPedido(pedido.getId());
@@ -237,6 +248,8 @@ public class VendedorController {
             dv.setPrecioUnitario(dp.getPrecioUnitario());
             detalleVentaRepository.save(dv);
         }
+
+        return nuevaVenta;
     }
 
     // ==========================================
