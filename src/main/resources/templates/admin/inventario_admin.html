@@ -108,6 +108,16 @@
                     </select>
                 </div>
 
+                <!-- Mensajes de resultado (se envían desde el controlador) -->
+                <div th:if="${exito}" class="alert alert-success alert-dismissible fade show p-3 mb-3" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i><span th:text="${exito}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show p-3 mb-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
                 <!-- Tabla de Inventario -->
                 <div class="card border-0 shadow-sm rounded-3">
                     <div class="card-body p-0">

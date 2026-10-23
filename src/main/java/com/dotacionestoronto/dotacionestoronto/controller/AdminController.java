@@ -5,6 +5,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -12,11 +16,17 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.dotacionestoronto.dotacionestoronto.entity.Usuario;
 import com.dotacionestoronto.dotacionestoronto.entity.UsuarioRol;
+import com.dotacionestoronto.dotacionestoronto.repository.DevolucionRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.PedidoRepository;
+import com.dotacionestoronto.dotacionestoronto.repository.ProductoRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRepository;
 import com.dotacionestoronto.dotacionestoronto.repository.UsuarioRolRepository;
+import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosExcelService;
+import com.dotacionestoronto.dotacionestoronto.service.ReporteUsuariosService;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
@@ -30,6 +40,21 @@ public class AdminController {
 
     @Autowired
     private UsuarioRolRepository usuarioRolRepository;
+
+    @Autowired
+    private ProductoRepository productoRepository;
+
+    @Autowired
+    private PedidoRepository pedidoRepository;
+
+    @Autowired
+    private DevolucionRepository devolucionRepository;
+
+    @Autowired
+    private ReporteUsuariosService reporteUsuariosService;
+
+    @Autowired
+    private ReporteUsuariosExcelService reporteUsuariosExcelService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -54,6 +79,12 @@ public class AdminController {
                 "nombre",
                 usuarioActual.getNombre()
         );
+
+        // Tarjetas de resumen del panel (antes llegaban vacías)
+        model.addAttribute("totalUsuarios", usuarioRepository.count());
+        model.addAttribute("totalProductos", productoRepository.count());
+        model.addAttribute("totalPedidos", pedidoRepository.count());
+        model.addAttribute("totalDevoluciones", devolucionRepository.count());
 
         return "admin/panel_admin";
     }
@@ -443,6 +474,101 @@ public class AdminController {
                 "rolesFiltroPorUsuario",
                 rolesFiltroPorUsuario
         );
+    }
+
+    // =========================================================
+    // TOGGLE ESTADO (ruta usada por usuarios_admin.html)
+    // =========================================================
+
+    @PostMapping("/usuarios/toggleEstado")
+    public String toggleEstadoUsuario(
+            @RequestParam Long idUsuario,
+            RedirectAttributes redirect) {
+
+        Usuario usuario =
+                usuarioRepository
+                        .findById(idUsuario)
+                        .orElse(null);
+
+        if (usuario != null) {
+
+            if ("Habilitado".equals(
+                    usuario.getEstado())) {
+
+                usuario.setEstado(
+                        "Inhabilitado"
+                );
+
+            } else {
+
+                usuario.setEstado(
+                        "Habilitado"
+                );
+            }
+
+            usuarioRepository.save(usuario);
+
+            redirect.addFlashAttribute(
+                    "exito",
+                    "El usuario "
+                            + usuario.getNombre()
+                            + " quedó en estado "
+                            + usuario.getEstado()
+                            + "."
+            );
+        }
+
+        return "redirect:/admin/usuarios";
+    }
+
+    // =========================================================
+    // REPORTES DE USUARIOS (PDF y Excel)
+    // =========================================================
+
+    @GetMapping("/usuarios/reporte")
+    public ResponseEntity<byte[]> reporteUsuarios() {
+
+        byte[] pdf =
+                reporteUsuariosService.generarReporte(
+                        usuarioRepository.findAll()
+                );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(
+                ContentDisposition.attachment()
+                        .filename("reporte_usuarios.pdf")
+                        .build()
+        );
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdf);
+    }
+
+    @GetMapping("/usuarios/reporte/excel")
+    public ResponseEntity<byte[]> reporteUsuariosExcel() {
+
+        byte[] excel =
+                reporteUsuariosExcelService.generarReporte(
+                        usuarioRepository.findAll()
+                );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(
+                MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+        );
+        headers.setContentDisposition(
+                ContentDisposition.attachment()
+                        .filename("reporte_usuarios.xlsx")
+                        .build()
+        );
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(excel);
     }
 
     // =========================================================
