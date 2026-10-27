@@ -1,0 +1,1023 @@
+From 8d5be4f7fcc197d35e550b14980f05d87ca68984 Mon Sep 17 00:00:00 2001
+From: JHO4NSEBASTI4N <johansebastian20082023@gmail.com>
+Date: Mon, 26 Oct 2026 21:20:55 +0000
+Subject: [PATCH] feat(facturacion): representacion grafica en formato de
+ factura convencional
+
+- Nuevo PdfFacturaConvencionalService: recuadros, seccion Senores, valor en
+  letras, tabla de items con descuento, totales, QR, CUFE, resolucion, firma
+  del emisor y nota legal (Resolucion 000165 de 2023).
+- Nuevo NumeroALetras para el valor en letras.
+- facturacion.formato-pdf (CONVENCIONAL por defecto | MODERNO).
+- GET /admin/facturacion/{id}/pdf?formato=convencional|moderno&descargar=true
+  y atajo GET /admin/facturacion/{id}/pdf-convencional.
+- Botones en factura_detalle_admin.html: ver convencional, ver moderno, descargar.
+- DocumentosEjemploTest genera tambien factura-ejemplo-convencional.pdf.
+---
+ .../config/FacturacionProperties.java         |  12 +
+ .../controller/FacturacionController.java     |  45 +-
+ .../service/FacturacionService.java           |  27 +-
+ .../facturacion/service/NumeroALetras.java    | 128 ++++
+ .../PdfFacturaConvencionalService.java        | 648 ++++++++++++++++++
+ .../admin/factura_detalle_admin.html          |  12 +-
+ .../facturacion/DocumentosEjemploTest.java    |   4 +
+ 7 files changed, 870 insertions(+), 6 deletions(-)
+ create mode 100644 src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/service/NumeroALetras.java
+ create mode 100644 src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/service/PdfFacturaConvencionalService.java
+
+diff --git a/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/config/FacturacionProperties.java b/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/config/FacturacionProperties.java
+index 00fcc7d..3ac6d2f 100644
+--- a/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/config/FacturacionProperties.java
++++ b/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/config/FacturacionProperties.java
+@@ -34,6 +34,15 @@ public class FacturacionProperties {
+     /** Genera automáticamente la factura al entregar un pedido. */
+     private boolean emisionAutomatica = true;
+ 
++    /**
++     * Formato de la representación gráfica (PDF):
++     *   CONVENCIONAL -> formato clásico de factura colombiana (recuadros,
++     *                   valor en letras y firma). Es el que se usa por defecto.
++     *   MODERNO      -> diseño con tarjetas y tabla de colores.
++     * Desde el panel se puede abrir cualquiera de los dos sin cambiar esto.
++     */
++    private String formatoPdf = "CONVENCIONAL";
++
+     /** Crea las tablas del módulo al arrancar si no existen. */
+     private boolean autoCrearTablas = true;
+ 
+@@ -43,6 +52,9 @@ public class FacturacionProperties {
+     private Dian dian = new Dian();
+     private Proveedor proveedor = new Proveedor();
+ 
++    public String getFormatoPdf() { return formatoPdf; }
++    public void setFormatoPdf(String v) { this.formatoPdf = v; }
++
+     // ==========================================================
+     // EMISOR
+     // ==========================================================
+diff --git a/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/controller/FacturacionController.java b/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/controller/FacturacionController.java
+index e869db0..f6c7fc0 100644
+--- a/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/controller/FacturacionController.java
++++ b/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/controller/FacturacionController.java
+@@ -153,12 +153,51 @@ public class FacturacionController {
+     // ==========================================================
+     // ARCHIVOS
+     // ==========================================================
++    /**
++     * Representación gráfica de la factura.
++     *
++     * formato = convencional (por defecto) | moderno
++     * descargar = true fuerza la descarga en lugar de abrirla en el navegador
++     */
+     @GetMapping("/{id}/pdf")
+-    public ResponseEntity<byte[]> pdf(@PathVariable Long id) {
+-        byte[] pdf = facturacionService.generarPdf(id);
++    public ResponseEntity<byte[]> pdf(@PathVariable Long id,
++                                      @RequestParam(required = false) String formato,
++                                      @RequestParam(required = false, defaultValue = "false") boolean descargar) {
++
++        byte[] pdf = facturacionService.generarPdf(id, formato);
++
++        FacturaElectronica factura = facturacionService.buscar(id);
++        String numero = factura != null && factura.getNumeroFactura() != null
++                ? factura.getNumeroFactura()
++                : String.valueOf(id);
++        String sufijo = formato != null && formato.equalsIgnoreCase("moderno") ? "-moderno" : "";
++        String nombre = "Factura-" + numero + sufijo + ".pdf";
++
++        ContentDisposition disposicion = descargar
++                ? ContentDisposition.attachment().filename(nombre, StandardCharsets.UTF_8).build()
++                : ContentDisposition.inline().filename(nombre, StandardCharsets.UTF_8).build();
++
++        return ResponseEntity.ok()
++                .header(HttpHeaders.CONTENT_DISPOSITION, disposicion.toString())
++                .contentType(MediaType.APPLICATION_PDF)
++                .body(pdf);
++    }
++
++    /** Atajo para abrir directamente el formato de factura convencional. */
++    @GetMapping("/{id}/pdf-convencional")
++    public ResponseEntity<byte[]> pdfConvencional(@PathVariable Long id) {
++        byte[] pdf = facturacionService.generarPdf(id, "CONVENCIONAL");
++
++        FacturaElectronica factura = facturacionService.buscar(id);
++        String numero = factura != null && factura.getNumeroFactura() != null
++                ? factura.getNumeroFactura()
++                : String.valueOf(id);
++
+         return ResponseEntity.ok()
+                 .header(HttpHeaders.CONTENT_DISPOSITION,
+-                        ContentDisposition.inline().filename("Factura-" + id + ".pdf", StandardCharsets.UTF_8).build().toString())
++                        ContentDisposition.inline()
++                                .filename("Factura-" + numero + "-convencional.pdf", StandardCharsets.UTF_8)
++                                .build().toString())
+                 .contentType(MediaType.APPLICATION_PDF)
+                 .body(pdf);
+     }
+diff --git a/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/service/FacturacionService.java b/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/service/FacturacionService.java
+index 9f8c2af..4089393 100644
+--- a/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/service/FacturacionService.java
++++ b/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/service/FacturacionService.java
+@@ -37,6 +37,7 @@ public class FacturacionService {
+     private final XmlFacturaService xmlService;
+     private final FirmaDigitalService firma;
+     private final PdfFacturaService pdfService;
++    private final PdfFacturaConvencionalService pdfConvencionalService;
+     private final FacturaElectronicaRepository facturaRepository;
+     private final Map<String, DianGateway> gateways = new HashMap<>();
+ 
+@@ -45,6 +46,7 @@ public class FacturacionService {
+                               XmlFacturaService xmlService,
+                               FirmaDigitalService firma,
+                               PdfFacturaService pdfService,
++                              PdfFacturaConvencionalService pdfConvencionalService,
+                               FacturaElectronicaRepository facturaRepository,
+                               List<DianGateway> gatewaysDisponibles) {
+         this.props = props;
+@@ -52,6 +54,7 @@ public class FacturacionService {
+         this.xmlService = xmlService;
+         this.firma = firma;
+         this.pdfService = pdfService;
++        this.pdfConvencionalService = pdfConvencionalService;
+         this.facturaRepository = facturaRepository;
+         gatewaysDisponibles.forEach(g -> gateways.put(g.modo().toUpperCase(), g));
+     }
+@@ -177,11 +180,33 @@ public class FacturacionService {
+     // ==========================================================
+ 
+     public byte[] generarPdf(Long idFactura) {
++        return generarPdf(idFactura, null);
++    }
++
++    /**
++     * Genera el PDF de la factura en el formato indicado.
++     *
++     * @param formato "CONVENCIONAL" (factura clásica con recuadros y valor en
++     *                letras), "MODERNO" (diseño con tarjetas) o null para usar
++     *                el que esté configurado en facturacion.formato-pdf.
++     */
++    public byte[] generarPdf(Long idFactura, String formato) {
++
+         FacturaElectronica f = emision.cargar(idFactura);
++
+         if (f == null) {
+             throw new IllegalArgumentException("La factura #" + idFactura + " no existe.");
+         }
+-        return pdfService.generar(f);
++
++        String elegido = formato != null && !formato.isBlank()
++                ? formato.trim().toUpperCase()
++                : props.getFormatoPdf();
++
++        if ("MODERNO".equals(elegido) || "MODERNA".equals(elegido)) {
++            return pdfService.generar(f);
++        }
++
++        return pdfConvencionalService.generarConvencional(f);
+     }
+ 
+     public String nombrePdf(Long idFactura) {
+diff --git a/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/service/NumeroALetras.java b/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/service/NumeroALetras.java
+new file mode 100644
+index 0000000..e83b8cf
+--- /dev/null
++++ b/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/service/NumeroALetras.java
+@@ -0,0 +1,128 @@
++package com.dotacionestoronto.dotacionestoronto.facturacion.service;
++
++import java.math.BigDecimal;
++import java.math.RoundingMode;
++
++/**
++ * Convierte un valor en pesos a letras, como se acostumbra en las facturas
++ * colombianas: 459000 -> "CUATROCIENTOS CINCUENTA Y NUEVE MIL PESOS M/CTE".
++ */
++public final class NumeroALetras {
++
++    private static final String[] UNIDADES = {
++            "CERO", "UNO", "DOS", "TRES", "CUATRO", "CINCO", "SEIS", "SIETE", "OCHO", "NUEVE",
++            "DIEZ", "ONCE", "DOCE", "TRECE", "CATORCE", "QUINCE", "DIECISEIS", "DIECISIETE",
++            "DIECIOCHO", "DIECINUEVE", "VEINTE", "VEINTIUNO", "VEINTIDOS", "VEINTITRES",
++            "VEINTICUATRO", "VEINTICINCO", "VEINTISEIS", "VEINTISIETE", "VEINTIOCHO", "VEINTINUEVE"
++    };
++
++    private static final String[] DECENAS = {
++            "", "", "", "TREINTA", "CUARENTA", "CINCUENTA", "SESENTA", "SETENTA", "OCHENTA", "NOVENTA"
++    };
++
++    private static final String[] CENTENAS = {
++            "", "CIENTO", "DOSCIENTOS", "TRESCIENTOS", "CUATROCIENTOS", "QUINIENTOS",
++            "SEISCIENTOS", "SETECIENTOS", "OCHOCIENTOS", "NOVECIENTOS"
++    };
++
++    private NumeroALetras() {
++    }
++
++    /** Ej: 459000 -> "CUATROCIENTOS CINCUENTA Y NUEVE MIL PESOS M/CTE". */
++    public static String pesos(BigDecimal valor) {
++        if (valor == null) {
++            return "CERO PESOS M/CTE";
++        }
++
++        BigDecimal redondeado = valor.setScale(0, RoundingMode.HALF_UP);
++        boolean negativo = redondeado.signum() < 0;
++        redondeado = redondeado.abs();
++
++        String entero = letras(redondeado.longValue());
++        String texto = entero + (redondeado.longValue() == 1 ? " PESO M/CTE" : " PESOS M/CTE");
++
++        return (negativo ? "MENOS " : "") + texto;
++    }
++
++    /** Número entero positivo o cero en letras. */
++    public static String letras(long numero) {
++
++        if (numero == 0) {
++            return "CERO";
++        }
++        if (numero == 100) {
++            return "CIEN";
++        }
++
++        StringBuilder sb = new StringBuilder();
++
++        long millones = numero / 1_000_000;
++        long miles = (numero % 1_000_000) / 1_000;
++        long resto = numero % 1_000;
++
++        if (millones > 0) {
++            if (millones == 1) {
++                sb.append("UN MILLON");
++            } else {
++                sb.append(centenas(millones)).append(" MILLONES");
++            }
++        }
++
++        if (miles > 0) {
++            if (sb.length() > 0) {
++                sb.append(' ');
++            }
++            sb.append(miles == 1 ? "MIL" : centenas(miles) + " MIL");
++        }
++
++        if (resto > 0) {
++            if (sb.length() > 0) {
++                sb.append(' ');
++            }
++            sb.append(centenas(resto));
++        }
++
++        return sb.toString().trim();
++    }
++
++    /** Convierte 1..999 a letras. */
++    private static String centenas(long n) {
++
++        if (n == 100) {
++            return "CIEN";
++        }
++
++        int centena = (int) (n / 100);
++        int resto = (int) (n % 100);
++
++        StringBuilder sb = new StringBuilder();
++
++        if (centena > 0) {
++            sb.append(CENTENAS[centena]);
++        }
++
++        if (resto > 0) {
++            if (centena > 0) {
++                sb.append(' ');
++            }
++            sb.append(decenas(resto));
++        }
++
++        return sb.toString();
++    }
++
++    /** Convierte 1..99 a letras. */
++    private static String decenas(int n) {
++
++        if (n < 30) {
++            return UNIDADES[n];
++        }
++
++        int decena = n / 10;
++        int unidad = n % 10;
++
++        return unidad == 0
++                ? DECENAS[decena]
++                : DECENAS[decena] + " Y " + UNIDADES[unidad];
++    }
++}
+diff --git a/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/service/PdfFacturaConvencionalService.java b/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/service/PdfFacturaConvencionalService.java
+new file mode 100644
+index 0000000..1136e36
+--- /dev/null
++++ b/src/main/java/com/dotacionestoronto/dotacionestoronto/facturacion/service/PdfFacturaConvencionalService.java
+@@ -0,0 +1,648 @@
++package com.dotacionestoronto.dotacionestoronto.facturacion.service;
++
++import java.awt.Color;
++import java.awt.image.BufferedImage;
++import java.io.ByteArrayOutputStream;
++import java.io.InputStream;
++import java.math.BigDecimal;
++import java.math.RoundingMode;
++import java.text.DecimalFormat;
++import java.text.DecimalFormatSymbols;
++import java.time.format.DateTimeFormatter;
++import java.util.List;
++import java.util.Locale;
++
++import org.springframework.core.io.ClassPathResource;
++import org.springframework.stereotype.Service;
++
++import com.dotacionestoronto.dotacionestoronto.facturacion.config.FacturacionProperties;
++import com.dotacionestoronto.dotacionestoronto.facturacion.entity.DetalleFacturaElectronica;
++import com.dotacionestoronto.dotacionestoronto.facturacion.entity.FacturaElectronica;
++import com.lowagie.text.Document;
++import com.lowagie.text.Element;
++import com.lowagie.text.Font;
++import com.lowagie.text.FontFactory;
++import com.lowagie.text.Image;
++import com.lowagie.text.PageSize;
++import com.lowagie.text.Paragraph;
++import com.lowagie.text.Phrase;
++import com.lowagie.text.Rectangle;
++import com.lowagie.text.pdf.PdfPCell;
++import com.lowagie.text.pdf.PdfPTable;
++import com.lowagie.text.pdf.PdfWriter;
++
++/**
++ * Representación gráfica de la factura electrónica con el formato
++ * "convencional" colombiano: recuadros, sección de señores, valor en letras,
++ * firma del emisor y totales destacados.
++ *
++ * Convive con {@link PdfFacturaService} (formato moderno). Desde el panel se
++ * puede abrir cualquiera de los dos.
++ *
++ * Requisitos del artículo 35 de la Resolución 000165 de 2023 que se conservan:
++ * datos del emisor y del adquirente, numeración autorizada con su resolución,
++ * fecha y hora de expedición, descripción de los ítems, discriminación de
++ * impuestos, total, CUFE, código QR y leyenda de validación DIAN.
++ */
++@Service
++public class PdfFacturaConvencionalService {
++
++    private static final Color NEGRO = new Color(33, 37, 41);
++    private static final Color GRIS_LINEA = new Color(120, 128, 140);
++    private static final Color GRIS_TEXTO = new Color(85, 92, 105);
++    private static final Color GRIS_SUAVE = new Color(246, 247, 249);
++    private static final Color VERDE = new Color(25, 135, 84);
++    private static final Color ROJO = new Color(190, 40, 40);
++
++    private static final DateTimeFormatter F_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
++    private static final DateTimeFormatter F_HORA = DateTimeFormatter.ofPattern("HH:mm:ss");
++
++    private final FacturacionProperties props;
++    private final CufeService cufeService;
++    private final QrService qrService;
++
++    public PdfFacturaConvencionalService(FacturacionProperties props,
++                                         CufeService cufeService,
++                                         QrService qrService) {
++        this.props = props;
++        this.cufeService = cufeService;
++        this.qrService = qrService;
++    }
++
++    public String nombreArchivo(FacturaElectronica f) {
++        return "Factura-" + f.getNumeroFactura() + "-convencional.pdf";
++    }
++
++    /** Alias por compatibilidad con el nombre usado en el resto del módulo. */
++    public byte[] generar(FacturaElectronica f) {
++        return generarConvencional(f);
++    }
++
++    public byte[] generarConvencional(FacturaElectronica f) {
++
++        ByteArrayOutputStream out = new ByteArrayOutputStream();
++        Document doc = new Document(PageSize.A4, 30, 30, 28, 30);
++
++        try {
++            PdfWriter.getInstance(doc, out);
++            doc.open();
++
++            doc.add(marco(cabecera(f)));
++            doc.add(espacio(6));
++            doc.add(marco(datosPartes(f)));
++            doc.add(espacio(6));
++            doc.add(tablaItems(f));
++            doc.add(espacio(6));
++            doc.add(bloqueValorEnLetrasYtotales(f));
++            doc.add(espacio(8));
++            doc.add(marco(pieFiscal(f)));
++            doc.add(espacio(6));
++            doc.add(notaLegal(f));
++
++            doc.close();
++            return out.toByteArray();
++
++        } catch (Exception e) {
++            throw new IllegalStateException(
++                    "No fue posible generar el PDF de la factura (formato convencional): " + e.getMessage(), e);
++        } finally {
++            if (doc.isOpen()) {
++                doc.close();
++            }
++        }
++    }
++
++    // ==========================================================
++    // CABECERA: emisor a la izquierda, recuadro del documento a la derecha
++    // ==========================================================
++    private PdfPTable cabecera(FacturaElectronica f) throws Exception {
++
++        PdfPTable tabla = new PdfPTable(new float[]{ 54f, 46f });
++        tabla.setWidthPercentage(100);
++
++        // ---------- Emisor ----------
++        PdfPCell emisor = new PdfPCell();
++        emisor.setBorder(Rectangle.NO_BORDER);
++        emisor.setPadding(6);
++
++        Image logo = cargarLogo();
++        if (logo != null) {
++            logo.scaleToFit(120, 52);
++            logo.setAlignment(Image.LEFT);
++            emisor.addElement(logo);
++        }
++
++        Paragraph razon = new Paragraph(texto(f.getRazonSocialEmisor()),
++                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, NEGRO));
++        razon.setSpacingBefore(4);
++        emisor.addElement(razon);
++
++        emisor.addElement(parrafo(
++                "NIT. " + nitConDv(f.getNitEmisor(), f.getDvEmisor())
++                        + "   ·   Régimen " + texto(f.getRegimenEmisor()),
++                7.5f, false, GRIS_TEXTO));
++        emisor.addElement(parrafo(texto(f.getDireccionEmisor()) + "  ·  " + texto(f.getCiudadEmisor())
++                + "  ·  " + texto(f.getDepartamentoEmisor()), 7.5f, false, GRIS_TEXTO));
++        emisor.addElement(parrafo("Tel. " + texto(f.getTelefonoEmisor())
++                + "   ·   " + texto(f.getCorreoEmisor()), 7.5f, false, GRIS_TEXTO));
++        emisor.addElement(parrafo("Actividad económica " + texto(f.getActividadEconomicaEmisor())
++                + "   ·   Responsabilidades " + texto(f.getResponsabilidadesEmisor()), 7.5f, false, GRIS_TEXTO));
++
++        tabla.addCell(emisor);
++
++        // ---------- Recuadro del documento ----------
++        PdfPTable cajaDoc = new PdfPTable(1);
++        cajaDoc.setWidthPercentage(100);
++
++        PdfPCell titulo = new PdfPCell(new Phrase("FACTURA ELECTRÓNICA DE VENTA",
++                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, NEGRO)));
++        titulo.setBorder(Rectangle.BOX);
++        titulo.setBorderColor(GRIS_LINEA);
++        titulo.setHorizontalAlignment(Element.ALIGN_CENTER);
++        titulo.setPadding(6);
++        titulo.setBackgroundColor(GRIS_SUAVE);
++        cajaDoc.addCell(titulo);
++
++        PdfPCell numero = new PdfPCell(new Phrase("No. " + texto(f.getNumeroFactura()),
++                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13, NEGRO)));
++        numero.setBorder(Rectangle.BOX);
++        numero.setBorderColor(GRIS_LINEA);
++        numero.setHorizontalAlignment(Element.ALIGN_CENTER);
++        numero.setPadding(5);
++        cajaDoc.addCell(numero);
++
++        PdfPCell fecha = new PdfPCell(new Phrase(
++                "Fecha: " + (f.getFechaEmision() != null ? f.getFechaEmision().format(F_FECHA) : "-")
++                        + "     Hora: " + (f.getFechaEmision() != null ? f.getFechaEmision().format(F_HORA) : "-"),
++                FontFactory.getFont(FontFactory.HELVETICA, 8, NEGRO)));
++        fecha.setBorder(Rectangle.BOX);
++        fecha.setBorderColor(GRIS_LINEA);
++        fecha.setHorizontalAlignment(Element.ALIGN_CENTER);
++        fecha.setPadding(4);
++        cajaDoc.addCell(fecha);
++
++        PdfPCell estado = new PdfPCell(new Phrase(estadoTexto(f),
++                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f,
++                        "ACEPTADA".equals(f.getEstado()) ? VERDE
++                                : ("RECHAZADA".equals(f.getEstado()) || "ERROR".equals(f.getEstado()) ? ROJO : GRIS_TEXTO))));
++        estado.setBorder(Rectangle.BOX);
++        estado.setBorderColor(GRIS_LINEA);
++        estado.setHorizontalAlignment(Element.ALIGN_CENTER);
++        estado.setPadding(4);
++        cajaDoc.addCell(estado);
++
++        PdfPCell contenedor = new PdfPCell(cajaDoc);
++        contenedor.setBorder(Rectangle.NO_BORDER);
++        contenedor.setPadding(6);
++        tabla.addCell(contenedor);
++
++        return tabla;
++    }
++
++    // ==========================================================
++    // SEÑORES (adquirente) Y DATOS DEL DOCUMENTO
++    // ==========================================================
++    private PdfPTable datosPartes(FacturaElectronica f) {
++
++        PdfPTable tabla = new PdfPTable(new float[]{ 55f, 45f });
++        tabla.setWidthPercentage(100);
++
++        // ---------- Adquirente ----------
++        PdfPTable adq = new PdfPTable(new float[]{ 24f, 76f });
++        adq.setWidthPercentage(100);
++        adq.addCell(campoEtiqueta("SEÑORES"));
++        adq.addCell(campoCelda(texto(f.getRazonSocialAdquirente()), true));
++        adq.addCell(campoEtiqueta(tipoDocCorto(f.getTipoDocAdquirente()) + " / NIT"));
++        adq.addCell(campoCelda(nitConDv(f.getNitAdquirente(), f.getDvAdquirente()), false));
++        adq.addCell(campoEtiqueta("DIRECCIÓN"));
++        adq.addCell(campoCelda(texto(f.getDireccionAdquirente()), false));
++        adq.addCell(campoEtiqueta("TELÉFONO"));
++        adq.addCell(campoCelda(texto(f.getTelefonoAdquirente()), false));
++        adq.addCell(campoEtiqueta("CIUDAD"));
++        adq.addCell(campoCelda(texto(f.getCiudadAdquirente()), false));
++        adq.addCell(campoEtiqueta("CORREO"));
++        adq.addCell(campoCelda(texto(f.getCorreoAdquirente()), false));
++
++        PdfPCell cajaAdq = new PdfPCell(adq);
++        cajaAdq.setBorder(Rectangle.NO_BORDER);
++        cajaAdq.setPadding(0);
++        tabla.addCell(cajaAdq);
++
++        // ---------- Documento ----------
++        PdfPTable info = new PdfPTable(new float[]{ 42f, 58f });
++        info.setWidthPercentage(100);
++        info.addCell(campoEtiqueta("FORMA DE PAGO"));
++        info.addCell(campoCelda(texto(formaPagoTexto(f.getFormaPago())), false));
++        info.addCell(campoEtiqueta("MEDIO DE PAGO"));
++        info.addCell(campoCelda(texto(medioPagoTexto(f.getMedioPago())), false));
++        info.addCell(campoEtiqueta("MONEDA"));
++        info.addCell(campoCelda(texto(f.getMoneda()), false));
++        info.addCell(campoEtiqueta("VENCIMIENTO"));
++        info.addCell(campoCelda(f.getFechaEmision() != null ? f.getFechaEmision().format(F_FECHA) : "-", false));
++        if (f.getIdPedido() != null) {
++            info.addCell(campoEtiqueta("PEDIDO"));
++            info.addCell(campoCelda("#" + f.getIdPedido(), false));
++        }
++        info.addCell(campoEtiqueta("AMBIENTE"));
++        info.addCell(campoCelda("1".equals(f.getAmbiente()) ? "Producción" : "Pruebas / habilitación", false));
++
++        PdfPCell cajaInfo = new PdfPCell(info);
++        cajaInfo.setBorder(Rectangle.NO_BORDER);
++        cajaInfo.setPadding(0);
++        tabla.addCell(cajaInfo);
++
++        return tabla;
++    }
++
++    // ==========================================================
++    // TABLA DE ÍTEMS
++    // ==========================================================
++    private PdfPTable tablaItems(FacturaElectronica f) {
++
++        PdfPTable tabla = new PdfPTable(new float[]{ 10f, 38f, 8f, 13f, 9f, 10f, 12f });
++        tabla.setWidthPercentage(100);
++        tabla.setHeaderRows(1);
++
++        String[] encabezados = { "CÓDIGO", "DESCRIPCIÓN", "CANT.", "VR. UNITARIO", "DCTO.", "IVA", "VR. TOTAL" };
++        for (String h : encabezados) {
++            PdfPCell c = new PdfPCell(new Phrase(h, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, NEGRO)));
++            c.setBackgroundColor(GRIS_SUAVE);
++            c.setBorderColor(GRIS_LINEA);
++            c.setPadding(4);
++            c.setHorizontalAlignment(Element.ALIGN_CENTER);
++            c.setVerticalAlignment(Element.ALIGN_MIDDLE);
++            tabla.addCell(c);
++        }
++
++        List<DetalleFacturaElectronica> detalles = f.getDetalles();
++        int i = 0;
++
++        for (DetalleFacturaElectronica d : detalles) {
++
++            BigDecimal cantidad = d.getCantidad() != null ? d.getCantidad() : BigDecimal.ZERO;
++            BigDecimal precio = d.getPrecioUnitario() != null ? d.getPrecioUnitario() : BigDecimal.ZERO;
++            BigDecimal descuento = d.getDescuento() != null ? d.getDescuento() : BigDecimal.ZERO;
++            BigDecimal iva = d.getIvaValor() != null ? d.getIvaValor() : BigDecimal.ZERO;
++
++            BigDecimal totalLinea = d.getTotalLinea() != null && d.getTotalLinea().compareTo(BigDecimal.ZERO) != 0
++                    ? d.getTotalLinea()
++                    : precio.multiply(cantidad).subtract(descuento).add(iva);
++
++            tabla.addCell(celdaTexto(d.getCodigoProducto() != null ? d.getCodigoProducto() : String.valueOf(++i),
++                    Element.ALIGN_CENTER));
++            tabla.addCell(celdaTexto(texto(d.getDescripcion()), Element.ALIGN_LEFT));
++            tabla.addCell(celdaTexto(numero(cantidad), Element.ALIGN_CENTER));
++            tabla.addCell(celdaTexto(moneda(precio), Element.ALIGN_RIGHT));
++            tabla.addCell(celdaTexto(moneda(descuento), Element.ALIGN_RIGHT));
++            tabla.addCell(celdaTexto(moneda(iva), Element.ALIGN_RIGHT));
++            tabla.addCell(celdaTexto(moneda(totalLinea), Element.ALIGN_RIGHT));
++        }
++
++        if (detalles.isEmpty()) {
++            PdfPCell vacio = new PdfPCell(new Phrase("Sin ítems registrados",
++                    FontFactory.getFont(FontFactory.HELVETICA, 8, GRIS_TEXTO)));
++            vacio.setColspan(7);
++            vacio.setBorderColor(GRIS_LINEA);
++            vacio.setPadding(6);
++            vacio.setHorizontalAlignment(Element.ALIGN_CENTER);
++            tabla.addCell(vacio);
++        }
++
++        return tabla;
++    }
++
++    // ==========================================================
++    // VALOR EN LETRAS + TOTALES
++    // ==========================================================
++    private PdfPTable bloqueValorEnLetrasYtotales(FacturaElectronica f) {
++
++        PdfPTable tabla = new PdfPTable(new float[]{ 52f, 48f });
++        tabla.setWidthPercentage(100);
++
++        // ---------- Valor en letras ----------
++        PdfPTable letras = new PdfPTable(1);
++        letras.setWidthPercentage(100);
++
++        PdfPCell tituloLetras = new PdfPCell(new Phrase("VALOR EN LETRAS",
++                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7.5f, NEGRO)));
++        tituloLetras.setBorderColor(GRIS_LINEA);
++        tituloLetras.setBackgroundColor(GRIS_SUAVE);
++        tituloLetras.setPadding(4);
++        letras.addCell(tituloLetras);
++
++        PdfPCell contenidoLetras = new PdfPCell(new Phrase(NumeroALetras.pesos(f.getTotalFactura()),
++                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, NEGRO)));
++        contenidoLetras.setBorderColor(GRIS_LINEA);
++        contenidoLetras.setPadding(7);
++        contenidoLetras.setVerticalAlignment(Element.ALIGN_MIDDLE);
++        letras.addCell(contenidoLetras);
++
++        PdfPCell cajaLetras = new PdfPCell(letras);
++        cajaLetras.setBorder(Rectangle.NO_BORDER);
++        cajaLetras.setPadding(0);
++        tabla.addCell(cajaLetras);
++
++        // ---------- Totales ----------
++        PdfPTable tot = new PdfPTable(new float[]{ 58f, 42f });
++        tot.setWidthPercentage(100);
++
++        tot.addCell(totalEtiqueta("Subtotal"));
++        tot.addCell(totalValor(moneda(f.getValorBruto())));
++
++        if (f.getDescuentoTotal() != null && f.getDescuentoTotal().compareTo(BigDecimal.ZERO) > 0) {
++            tot.addCell(totalEtiqueta("Descuentos"));
++            tot.addCell(totalValor("- " + moneda(f.getDescuentoTotal())));
++        }
++
++        tot.addCell(totalEtiqueta("IVA"));
++        tot.addCell(totalValor(moneda(f.getTotalIva())));
++
++        if (f.getTotalImpuestos() != null
++                && f.getTotalIva() != null
++                && f.getTotalImpuestos().subtract(f.getTotalIva()).compareTo(BigDecimal.ZERO) > 0) {
++            tot.addCell(totalEtiqueta("Otros impuestos"));
++            tot.addCell(totalValor(moneda(f.getTotalImpuestos().subtract(f.getTotalIva()))));
++        }
++
++        PdfPCell etiquetaTotal = new PdfPCell(new Phrase("TOTAL A PAGAR",
++                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9.5f, NEGRO)));
++        etiquetaTotal.setBorderColor(GRIS_LINEA);
++        etiquetaTotal.setBackgroundColor(GRIS_SUAVE);
++        etiquetaTotal.setPadding(7);
++        tot.addCell(etiquetaTotal);
++
++        PdfPCell valorTotal = new PdfPCell(new Phrase(moneda(f.getTotalFactura()),
++                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9.5f, NEGRO)));
++        valorTotal.setBorderColor(GRIS_LINEA);
++        valorTotal.setBackgroundColor(GRIS_SUAVE);
++        valorTotal.setPadding(7);
++        valorTotal.setHorizontalAlignment(Element.ALIGN_RIGHT);
++        tot.addCell(valorTotal);
++
++        PdfPCell cajaTot = new PdfPCell(tot);
++        cajaTot.setBorder(Rectangle.NO_BORDER);
++        cajaTot.setPadding(0);
++        tabla.addCell(cajaTot);
++
++        return tabla;
++    }
++
++    // ==========================================================
++    // PIE FISCAL: QR, CUFE, resolución, software y firma
++    // ==========================================================
++    private PdfPTable pieFiscal(FacturaElectronica f) {
++
++        PdfPTable tabla = new PdfPTable(new float[]{ 17f, 60f, 23f });
++        tabla.setWidthPercentage(100);
++
++        // ---------- QR ----------
++        PdfPCell qrCell = new PdfPCell();
++        qrCell.setBorderColor(GRIS_LINEA);
++        qrCell.setPadding(4);
++        qrCell.setHorizontalAlignment(Element.ALIGN_CENTER);
++        qrCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
++        try {
++            String contenidoQr = f.getQrUrl() != null ? f.getQrUrl() : cufeService.construirUrlQr(f);
++            BufferedImage qr = qrService.generarImagen(contenidoQr, 240);
++            Image qrImg = Image.getInstance(qr, null);
++            qrImg.scaleToFit(86, 86);
++            qrCell.addElement(qrImg);
++            qrCell.addElement(new Paragraph("Verificar en DIAN",
++                    FontFactory.getFont(FontFactory.HELVETICA, 6, GRIS_TEXTO)));
++        } catch (Exception e) {
++            qrCell.addElement(new Paragraph("QR no disponible",
++                    FontFactory.getFont(FontFactory.HELVETICA, 6, ROJO)));
++        }
++        tabla.addCell(qrCell);
++
++        // ---------- Datos fiscales ----------
++        PdfPCell datos = new PdfPCell();
++        datos.setBorderColor(GRIS_LINEA);
++        datos.setPadding(5);
++
++        datos.addElement(parrafo("CUFE:", 7, true, NEGRO));
++        datos.addElement(new Paragraph(texto(f.getCufe()),
++                FontFactory.getFont(FontFactory.COURIER, 6.5f, GRIS_TEXTO)));
++
++        datos.addElement(parrafo("Resolución de autorización de numeración DIAN No. "
++                + texto(f.getResolucionNumero())
++                + " del " + fecha(f.getResolucionVigenciaDesde())
++                + " al " + fecha(f.getResolucionVigenciaHasta())
++                + ". Prefijo " + texto(f.getPrefijo())
++                + " del " + texto(String.valueOf(f.getResolucionDesde()))
++                + " al " + texto(String.valueOf(f.getResolucionHasta())) + ".", 6.5f, false, GRIS_TEXTO));
++
++        datos.addElement(parrafo("Software: " + texto(props.getDian().getSoftwareNombre())
++                + "  ·  ID: " + texto(f.getSoftwareId())
++                + "  ·  Fabricante: " + texto(props.getEmisor().getFabricanteSoftware())
++                + " (NIT " + texto(props.getEmisor().getNit()) + ").", 6.5f, false, GRIS_TEXTO));
++
++        String leyenda = "ACEPTADA".equals(f.getEstado())
++                ? ("Documento validado por la DIAN"
++                        + (Boolean.TRUE.equals(f.getSimulado()) ? " (modo simulación - sin validez fiscal)" : "."))
++                : "Documento generado. Pendiente de validación por la DIAN.";
++
++        datos.addElement(parrafo(leyenda, 6.5f, true,
++                "ACEPTADA".equals(f.getEstado()) && !Boolean.TRUE.equals(f.getSimulado()) ? VERDE : GRIS_TEXTO));
++
++        if (f.getFechaRespuesta() != null) {
++            datos.addElement(parrafo("Fecha de validación DIAN: "
++                    + f.getFechaRespuesta().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")),
++                    6.5f, false, GRIS_TEXTO));
++        }
++        tabla.addCell(datos);
++
++        // ---------- Firma ----------
++        PdfPCell firma = new PdfPCell();
++        firma.setBorderColor(GRIS_LINEA);
++        firma.setPadding(5);
++        firma.setVerticalAlignment(Element.ALIGN_BOTTOM);
++
++        firma.addElement(espacio(24));
++        firma.addElement(parrafo("__________________________________", 7, false, GRIS_TEXTO));
++        firma.addElement(parrafo(texto(f.getRazonSocialEmisor()), 7, true, NEGRO));
++        firma.addElement(parrafo("NIT. " + nitConDv(f.getNitEmisor(), f.getDvEmisor()), 6.5f, false, GRIS_TEXTO));
++        firma.addElement(parrafo("Firma del emisor", 6.5f, false, GRIS_TEXTO));
++
++        tabla.addCell(firma);
++
++        return tabla;
++    }
++
++    private Paragraph notaLegal(FacturaElectronica f) {
++        String texto = "Esta factura electrónica de venta fue generada y transmitida al sistema de facturación "
++                + "electrónica de la DIAN conforme a la Resolución 000165 de 2023. El adquirente puede verificarla "
++                + "escaneando el código QR o consultando el CUFE en el catálogo de la DIAN. "
++                + "Documento No. " + texto(f.getNumeroFactura()) + ".";
++
++        Paragraph p = new Paragraph(texto, FontFactory.getFont(FontFactory.HELVETICA, 6, GRIS_TEXTO));
++        p.setAlignment(Element.ALIGN_JUSTIFIED);
++        return p;
++    }
++
++    // ==========================================================
++    // HELPERS DE ESTILO
++    // ==========================================================
++    private PdfPTable marco(PdfPTable contenido) {
++        PdfPCell celda = new PdfPCell(contenido);
++        celda.setBorder(Rectangle.BOX);
++        celda.setBorderColor(GRIS_LINEA);
++        celda.setPadding(0);
++        PdfPTable marco = new PdfPTable(1);
++        marco.setWidthPercentage(100);
++        marco.addCell(celda);
++        return marco;
++    }
++
++    private PdfPCell campoEtiqueta(String texto) {
++        PdfPCell c = new PdfPCell(new Phrase(texto, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 6.8f, GRIS_TEXTO)));
++        c.setBorderColor(GRIS_LINEA);
++        c.setBackgroundColor(GRIS_SUAVE);
++        c.setPadding(3.5f);
++        c.setVerticalAlignment(Element.ALIGN_MIDDLE);
++        return c;
++    }
++
++    private PdfPCell campoCelda(String texto, boolean negrita) {
++        PdfPCell c = new PdfPCell(new Phrase(texto,
++                FontFactory.getFont(negrita ? FontFactory.HELVETICA_BOLD : FontFactory.HELVETICA, 7.8f, NEGRO)));
++        c.setBorderColor(GRIS_LINEA);
++        c.setPadding(3.5f);
++        c.setVerticalAlignment(Element.ALIGN_MIDDLE);
++        return c;
++    }
++
++    private PdfPCell celdaTexto(String texto, int alineacion) {
++        PdfPCell c = new PdfPCell(new Phrase(texto, FontFactory.getFont(FontFactory.HELVETICA, 7.8f, NEGRO)));
++        c.setBorderColor(GRIS_LINEA);
++        c.setPadding(3.5f);
++        c.setHorizontalAlignment(alineacion);
++        c.setVerticalAlignment(Element.ALIGN_MIDDLE);
++        return c;
++    }
++
++    private PdfPCell totalEtiqueta(String texto) {
++        PdfPCell c = new PdfPCell(new Phrase(texto, FontFactory.getFont(FontFactory.HELVETICA, 8, NEGRO)));
++        c.setBorderColor(GRIS_LINEA);
++        c.setPadding(4);
++        return c;
++    }
++
++    private PdfPCell totalValor(String texto) {
++        PdfPCell c = new PdfPCell(new Phrase(texto, FontFactory.getFont(FontFactory.HELVETICA, 8, NEGRO)));
++        c.setBorderColor(GRIS_LINEA);
++        c.setPadding(4);
++        c.setHorizontalAlignment(Element.ALIGN_RIGHT);
++        return c;
++    }
++
++    private Paragraph parrafo(String texto, float tamano, boolean negrita, Color color) {
++        return new Paragraph(texto,
++                FontFactory.getFont(negrita ? FontFactory.HELVETICA_BOLD : FontFactory.HELVETICA, tamano, color));
++    }
++
++    private Paragraph espacio(float alto) {
++        Paragraph p = new Paragraph(" ", FontFactory.getFont(FontFactory.HELVETICA, alto));
++        p.setSpacingAfter(0);
++        return p;
++    }
++
++    private Image cargarLogo() {
++        try {
++            ClassPathResource recurso = new ClassPathResource("static/images/logo negro.png");
++            if (!recurso.exists()) {
++                return null;
++            }
++            try (InputStream is = recurso.getInputStream()) {
++                return Image.getInstance(is.readAllBytes());
++            }
++        } catch (Exception e) {
++            return null;
++        }
++    }
++
++    // ==========================================================
++    // HELPERS DE FORMATO
++    // ==========================================================
++    private String moneda(BigDecimal valor) {
++        BigDecimal v = valor != null ? valor : BigDecimal.ZERO;
++        DecimalFormatSymbols simbolos = new DecimalFormatSymbols(new Locale("es", "CO"));
++        simbolos.setDecimalSeparator(',');
++        simbolos.setGroupingSeparator('.');
++        DecimalFormat formato = new DecimalFormat("#,##0.00", simbolos);
++        return "$ " + formato.format(v.setScale(2, RoundingMode.HALF_UP));
++    }
++
++    private String numero(BigDecimal valor) {
++        if (valor == null) {
++            return "0";
++        }
++        BigDecimal v = valor.stripTrailingZeros();
++        return v.scale() <= 0
++                ? String.valueOf(v.longValue())
++                : v.toPlainString();
++    }
++
++    private String fecha(java.time.LocalDate fecha) {
++        return fecha != null ? fecha.format(F_FECHA) : "-";
++    }
++
++    private String texto(String valor) {
++        return valor != null && !valor.isBlank() ? valor : "-";
++    }
++
++    /** Arma "NIT-DV" solo cuando hay dígito de verificación. */
++    private String nitConDv(String nit, String dv) {
++        if (nit == null || nit.isBlank()) {
++            return "-";
++        }
++        return dv != null && !dv.isBlank() ? nit + "-" + dv : nit;
++    }
++
++    private String estadoTexto(FacturaElectronica f) {
++        String estado = f.getEstado() != null ? f.getEstado() : "BORRADOR";
++        String sufijo = Boolean.TRUE.equals(f.getSimulado()) ? " (simulación)" : "";
++        return "Estado DIAN: " + estado + sufijo;
++    }
++
++    private String tipoDocCorto(String codigo) {
++        if (codigo == null) {
++            return "CC";
++        }
++        return switch (codigo) {
++            case "11" -> "RC";
++            case "12" -> "TI";
++            case "13" -> "CC";
++            case "21" -> "TE";
++            case "31" -> "NIT";
++            case "41" -> "PP";
++            case "42" -> "EE";
++            default -> "CC";
++        };
++    }
++
++    private String formaPagoTexto(String codigo) {
++        if (codigo == null) {
++            return "-";
++        }
++        return switch (codigo) {
++            case "1" -> "1 - Contado";
++            case "2" -> "2 - Crédito";
++            default -> codigo;
++        };
++    }
++
++    private String medioPagoTexto(String codigo) {
++        if (codigo == null) {
++            return "-";
++        }
++        return switch (codigo) {
++            case "10" -> "10 - Efectivo";
++            case "42" -> "42 - Consignación bancaria";
++            case "47" -> "47 - Transferencia";
++            case "48" -> "48 - Tarjeta crédito";
++            case "49" -> "49 - Tarjeta débito";
++            default -> codigo;
++        };
++    }
++}
+diff --git a/src/main/resources/templates/admin/factura_detalle_admin.html b/src/main/resources/templates/admin/factura_detalle_admin.html
+index 4df5a93..862c886 100644
+--- a/src/main/resources/templates/admin/factura_detalle_admin.html
++++ b/src/main/resources/templates/admin/factura_detalle_admin.html
+@@ -76,9 +76,17 @@
+             </p>
+         </div>
+         <div class="d-flex gap-2 flex-wrap">
++            <a class="btn btn-primary" target="_blank"
++               th:href="@{'/admin/facturacion/' + ${factura.id} + '/pdf-convencional'}">
++                <i class="bi bi-receipt"></i> Ver factura (formato convencional)
++            </a>
+             <a class="btn btn-outline-danger" target="_blank"
+-               th:href="@{'/admin/facturacion/' + ${factura.id} + '/pdf'}">
+-                <i class="bi bi-file-earmark-pdf"></i> Ver PDF
++               th:href="@{'/admin/facturacion/' + ${factura.id} + '/pdf(formato='moderno')}">
++                <i class="bi bi-file-earmark-pdf"></i> Ver PDF (formato moderno)
++            </a>
++            <a class="btn btn-outline-secondary"
++               th:href="@{'/admin/facturacion/' + ${factura.id} + '/pdf-convencional' + '?descargar=true'}">
++                <i class="bi bi-download"></i> Descargar factura
+             </a>
+             <a class="btn btn-outline-success" th:href="@{'/admin/facturacion/' + ${factura.id} + '/xml'}">
+                 <i class="bi bi-download"></i> Descargar XML
+diff --git a/src/test/java/com/dotacionestoronto/dotacionestoronto/facturacion/DocumentosEjemploTest.java b/src/test/java/com/dotacionestoronto/dotacionestoronto/facturacion/DocumentosEjemploTest.java
+index f31c73b..281909c 100644
+--- a/src/test/java/com/dotacionestoronto/dotacionestoronto/facturacion/DocumentosEjemploTest.java
++++ b/src/test/java/com/dotacionestoronto/dotacionestoronto/facturacion/DocumentosEjemploTest.java
+@@ -21,6 +21,7 @@ import com.dotacionestoronto.dotacionestoronto.facturacion.entity.DetalleFactura
+ import com.dotacionestoronto.dotacionestoronto.facturacion.entity.FacturaElectronica;
+ import com.dotacionestoronto.dotacionestoronto.facturacion.service.CufeService;
+ import com.dotacionestoronto.dotacionestoronto.facturacion.service.FirmaDigitalService;
++import com.dotacionestoronto.dotacionestoronto.facturacion.service.PdfFacturaConvencionalService;
+ import com.dotacionestoronto.dotacionestoronto.facturacion.service.PdfFacturaService;
+ import com.dotacionestoronto.dotacionestoronto.facturacion.service.QrService;
+ import com.dotacionestoronto.dotacionestoronto.facturacion.service.XmlFacturaService;
+@@ -41,6 +42,8 @@ class DocumentosEjemploTest {
+         FirmaDigitalService firmaService = new FirmaDigitalService(props, cufeService);
+         QrService qrService = new QrService();
+         PdfFacturaService pdfService = new PdfFacturaService(props, cufeService, qrService);
++        PdfFacturaConvencionalService pdfConvencional =
++                new PdfFacturaConvencionalService(props, cufeService, qrService);
+ 
+         FacturaElectronica f = ejemplo(cufeService);
+ 
+@@ -57,6 +60,7 @@ class DocumentosEjemploTest {
+         Files.createDirectories(salida);
+         Files.writeString(salida.resolve("factura-ejemplo.xml"), xmlFirmado, StandardCharsets.UTF_8);
+         Files.write(salida.resolve("factura-ejemplo.pdf"), pdfService.generar(f));
++        Files.write(salida.resolve("factura-ejemplo-convencional.pdf"), pdfConvencional.generarConvencional(f));
+         Files.write(salida.resolve("factura-qr.png"), qrService.generarPng(f.getQrUrl(), 300));
+ 
+         new File(salida.toFile(), "LEEME.txt").toPath();
+-- 
+2.47.3
+
